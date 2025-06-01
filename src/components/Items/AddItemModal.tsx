@@ -33,10 +33,24 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const initialFormData = {
+    name: '',
+    url: '',
+    imageUrl: '',
+    sellerUrl: '',
+    bid: 0,
+    currentBid: 0,
+    market: 1,
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onAdd(formData);
-    onClose();
+    if (formData) {
+      await onAdd(formData);
+      setFormData(initialFormData);
+      onClose();
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

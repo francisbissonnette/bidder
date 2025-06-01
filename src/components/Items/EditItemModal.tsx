@@ -33,8 +33,9 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (item) {
-      await onEdit(item);
+    if (formData) {
+      await onEdit(formData);
+      setFormData(null);
       onClose();
     }
   };

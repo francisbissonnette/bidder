@@ -15,7 +15,7 @@ const theme = extendTheme({
       300: '#cbd5e0',
       400: '#a0aec0',
       500: '#718096',
-      600: '#4a5568',
+      600: '#353535',
       700: '#282828',
       800: '#232323',
       900: '#1D1D1D',
@@ -26,15 +26,19 @@ const theme = extendTheme({
       baseStyle: {
         th: {
           borderWidth: 0,
+          borderColor: 'gray.700',
           color: 'gray.400',
           fontWeight: 'bold',
           textTransform: 'none',
-          letterSpacing: 'normal',
-          fontSize: '2xl',
-          py: 6,
+          letterSpacing: 'wider',
+          fontSize: '16px',
+          py: 4,
         },
         td: {
           borderWidth: 0,
+        },
+        tr: {
+        
         },
       },
     },

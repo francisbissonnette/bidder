@@ -80,13 +80,16 @@ const ItemsTable = ({
     <Tr
       key={item.id}
       bg={isSubItem ? subItemBgColor : bgColor}
+      borderBottomWidth="2px"
+      borderBottomColor="gray.600"
+      fontSize="18px"
     >
       <Td>
         <Flex align="center" gap={4}>
           <Box
             position="relative"
             width={isSubItem ? "80px" : "100px"}
-            height={isSubItem ? "105px" : "140px"}
+            height={isSubItem ? "105px" : "135px"}
             marginLeft={isSubItem ? "20px" : "0"}
             overflow="hidden"
             borderRadius="md"
@@ -94,8 +97,8 @@ const ItemsTable = ({
             <Image
               src={item.imageUrl}
               alt={item.name}
-              width={isSubItem ? "100px" : "100px"}
-              height={isSubItem ? "200px" : "200px"}
+              width={isSubItem ? "160px" : "200px"}
+              height={isSubItem ? "210px" : "270px"}
               position="absolute"
               objectFit="cover"
               top="50%"

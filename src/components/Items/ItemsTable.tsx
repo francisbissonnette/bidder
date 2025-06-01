@@ -76,7 +76,7 @@ const ItemsTable = ({
     return parts[parts.length - 1];
   };
 
-  const renderItem = (item: Item, isSubItem = false, mainItemDate?: string) => (
+  const renderItem = (item: Item, isSubItem = false) => (
     <Tr
       key={item.id}
       bg={isSubItem ? subItemBgColor : bgColor}
@@ -85,22 +85,23 @@ const ItemsTable = ({
         <Flex align="center" gap={4}>
           <Box
             position="relative"
-            width={isSubItem ? "60px" : "100px"}
-            height={isSubItem ? "85px" : "150px"}
-            marginLeft={isSubItem ? "40px" : "0"}
+            width={isSubItem ? "80px" : "100px"}
+            height={isSubItem ? "105px" : "140px"}
+            marginLeft={isSubItem ? "20px" : "0"}
             overflow="hidden"
             borderRadius="md"
           >
             <Image
               src={item.imageUrl}
               alt={item.name}
-              width={isSubItem ? "75px" : "100px"}
-              height="auto"
+              width={isSubItem ? "100px" : "100px"}
+              height={isSubItem ? "200px" : "200px"}
               position="absolute"
+              objectFit="cover"
               top="50%"
               left="50%"
               transform="translate(-50%, -50%)"
-              objectFit="none"
+
               objectPosition="55% 55%"
             />
           </Box>
@@ -133,15 +134,8 @@ const ItemsTable = ({
       <Td>${item.currentBid?.toFixed(2) || '0.00'}</Td>
       <Td>${item.market.toFixed(2)}</Td>
       <Td>
-        <Text color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
-          {new Date(item.date).toLocaleString()}
-        </Text>
-        <Text 
-          fontSize="sm" 
-          color={getTimeRemaining(item.date).includes('h') ? 'green.500' : 'red.500'}
-        >
-          {getTimeRemaining(item.date)}
-        </Text>
+        <Text>{new Date(item.date).toLocaleString()}</Text>
+        <Text fontSize="sm" color="gray.500">{getTimeRemaining(item.date)}</Text>
       </Td>
       <Td>
         {!isArchive && (
@@ -192,7 +186,7 @@ const ItemsTable = ({
           {items.map((item) => (
             <>
               {renderItem(item)}
-              {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
+              {item.subItems?.map((subItem) => renderItem(subItem, true))}
             </>
           ))}
         </Tbody>

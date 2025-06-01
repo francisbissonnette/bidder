@@ -31,10 +31,10 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
     }
   }, [item]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData) {
-      onEdit(formData);
+    if (item) {
+      await onEdit(item);
       onClose();
     }
   };

@@ -212,10 +212,7 @@ const ItemsTable = ({
               setIsDeleteModalOpen(false);
               setSelectedItem(null);
             }}
-            onDelete={() => {
-              onDeleteItem(selectedItem);
-              setIsDeleteModalOpen(false);
-            }}
+            onDelete={() => onDeleteItem(selectedItem)}
             itemName={selectedItem.name}
           />
         </>

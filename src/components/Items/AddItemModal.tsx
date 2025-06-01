@@ -113,13 +113,15 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
                 />
               </FormControl>
               <FormControl isRequired>
-                <FormLabel>Market</FormLabel>
+                <FormLabel>Market Value</FormLabel>
                 <Input
                   name="market"
                   type="number"
+                  step="0.01"
+                  min="0"
                   value={formData.market}
                   onChange={handleChange}
-                  placeholder="Enter market number"
+                  placeholder="Enter market value"
                 />
               </FormControl>
               <FormControl isRequired>

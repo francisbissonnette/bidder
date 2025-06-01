@@ -7,13 +7,14 @@ import {
   Td,
   Box,
   Image,
-  Button,
+  IconButton,
   Flex,
   Icon,
   Text,
   useColorModeValue,
+  Link,
 } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiChevronRight, FiArchive } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink } from 'react-icons/fi';
 import { Item } from '@/types/item';
 import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
@@ -40,9 +41,9 @@ const ItemsTable = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const subItemBgColor = useColorModeValue('gray.50', 'gray.700');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const bgColor = useColorModeValue('white', 'gray.900');
+  const subItemBgColor = useColorModeValue('gray.50', 'gray.800');
+  const borderColor = useColorModeValue('gray.700', 'gray.800');
 
   const handleEdit = (item: Item) => {
     setSelectedItem(item);
@@ -54,27 +55,46 @@ const ItemsTable = ({
     setIsDeleteModalOpen(true);
   };
 
-  const renderItem = (item: Item, isSubItem = false) => (
+  const getTimeRemaining = (date: string) => {
+    const endDate = new Date(date);
+    const now = new Date();
+    const diff = endDate.getTime() - now.getTime();
+    
+    if (diff <= 0) return 'Ended';
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const getSellerName = (url: string) => {
+    const parts = url.split('/');
+    return parts[parts.length - 1];
+  };
+
+  const renderItem = (item: Item, isSubItem = false, mainItemDate?: string) => (
     <Tr
       key={item.id}
       bg={isSubItem ? subItemBgColor : bgColor}
-      borderLeft={isSubItem ? '4px solid' : 'none'}
-      borderLeftColor={isSubItem ? 'blue.500' : undefined}
     >
       <Td>
         <Flex align="center" gap={4}>
-          {isSubItem && <Icon as={FiChevronRight} color="blue.500" />}
           <Box
             position="relative"
-            width={isSubItem ? "75px" : "150px"}
-            height={isSubItem ? "75px" : "150px"}
+            width={isSubItem ? "60px" : "100px"}
+            height={isSubItem ? "85px" : "150px"}
+            marginLeft={isSubItem ? "40px" : "0"}
             overflow="hidden"
             borderRadius="md"
           >
             <Image
               src={item.imageUrl}
               alt={item.name}
-              width={isSubItem ? "75px" : "150px"}
+              width={isSubItem ? "75px" : "100px"}
               height="auto"
               position="absolute"
               top="50%"
@@ -84,64 +104,69 @@ const ItemsTable = ({
               objectPosition="55% 55%"
             />
           </Box>
-          <Text fontWeight={isSubItem ? 'normal' : 'bold'}>{item.name}</Text>
+          <Link
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            color="blue.500"
+            _hover={{ textDecoration: 'underline' }}
+            fontWeight={isSubItem ? 'normal' : 'bold'}
+          >
+            {item.name}
+            <Icon as={FiExternalLink} ml={1} boxSize={3} />
+          </Link>
         </Flex>
       </Td>
       <Td>
-        <Text
-          as="a"
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          color="blue.500"
-          _hover={{ textDecoration: 'underline' }}
-        >
-          View Item
-        </Text>
-      </Td>
-      <Td>
-        <Text
-          as="a"
+        <Link
           href={item.sellerUrl}
           target="_blank"
           rel="noopener noreferrer"
           color="blue.500"
           _hover={{ textDecoration: 'underline' }}
         >
-          View Seller
-        </Text>
+          {getSellerName(item.sellerUrl)}
+          <Icon as={FiExternalLink} ml={1} boxSize={3} />
+        </Link>
       </Td>
       <Td>${item.bid.toFixed(2)}</Td>
       <Td>${item.currentBid?.toFixed(2) || '0.00'}</Td>
-      <Td>{item.market}</Td>
-      <Td>{new Date(item.date).toLocaleString()}</Td>
+      <Td>${item.market.toFixed(2)}</Td>
+      <Td>
+        <Text color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
+          {new Date(item.date).toLocaleString()}
+        </Text>
+        <Text 
+          fontSize="sm" 
+          color={getTimeRemaining(item.date).includes('h') ? 'green.500' : 'red.500'}
+        >
+          {getTimeRemaining(item.date)}
+        </Text>
+      </Td>
       <Td>
         {!isArchive && (
           <Flex gap={2}>
-            <Button
+            <IconButton
+              aria-label="Edit item"
+              icon={<Icon as={FiEdit2} />}
               size="sm"
-              leftIcon={<Icon as={FiEdit2} />}
               onClick={() => handleEdit(item)}
-            >
-              Edit
-            </Button>
-            <Button
+            />
+            <IconButton
+              aria-label="Delete item"
+              icon={<Icon as={FiTrash2} />}
               size="sm"
               colorScheme="red"
-              leftIcon={<Icon as={FiTrash2} />}
               onClick={() => handleDelete(item)}
-            >
-              Delete
-            </Button>
+            />
             {onArchiveItem && (
-              <Button
+              <IconButton
+                aria-label="Archive item"
+                icon={<Icon as={FiArchive} />}
                 size="sm"
                 colorScheme="purple"
-                leftIcon={<Icon as={FiArchive} />}
                 onClick={() => onArchiveItem(item.id!)}
-              >
-                Archive
-              </Button>
+              />
             )}
           </Flex>
         )}
@@ -155,8 +180,7 @@ const ItemsTable = ({
         <Thead>
           <Tr>
             <Th>Item</Th>
-            <Th>Item URL</Th>
-            <Th>Seller URL</Th>
+            <Th>Seller</Th>
             <Th>Bid</Th>
             <Th>Current</Th>
             <Th>Market</Th>
@@ -168,7 +192,7 @@ const ItemsTable = ({
           {items.map((item) => (
             <>
               {renderItem(item)}
-              {item.subItems?.map((subItem) => renderItem(subItem, true))}
+              {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
             </>
           ))}
         </Tbody>

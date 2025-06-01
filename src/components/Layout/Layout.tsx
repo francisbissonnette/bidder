@@ -10,13 +10,13 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const pathname = usePathname();
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const bgColor = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   const isActive = (path: string) => pathname === path;
 
   return (
-    <Box minH="100vh" bg={bgColor}>
+    <Box minH="100vh">
       <Flex
         as="nav"
         align="center"

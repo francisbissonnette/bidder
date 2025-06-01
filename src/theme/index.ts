@@ -16,16 +16,16 @@ const theme = extendTheme({
       400: '#a0aec0',
       500: '#718096',
       600: '#4a5568',
-      700: '#2d3748',
-      800: '#1a202c',
-      900: '#171923',
+      700: '#282828',
+      800: '#232323',
+      900: '#1D1D1D',
     },
   },
   components: {
     Table: {
       baseStyle: {
         th: {
-          borderColor: 'gray.900',
+          borderWidth: 0,
           color: 'gray.400',
           fontWeight: 'bold',
           textTransform: 'none',
@@ -34,7 +34,7 @@ const theme = extendTheme({
           py: 6,
         },
         td: {
-          borderColor: 'gray.900',
+          borderWidth: 0,
         },
       },
     },
@@ -78,7 +78,7 @@ const theme = extendTheme({
   styles: {
     global: {
       body: {
-        bg: '#0a0a0a',
+        bg: '#171616',
         color: 'white',
       },
     },

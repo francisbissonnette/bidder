@@ -11,50 +11,6 @@ import AddItemModal from '@/components/Items/AddItemModal';
 import EditItemModal from '@/components/Items/EditItemModal';
 import DeleteItemModal from '@/components/Items/DeleteItemModal';
 
-// Sample data
-const sampleItems: Omit<Item, 'id'>[] = [
-  {
-    name: 'Item 1',
-    url: 'https://example.com/item1',
-    imageUrl: 'https://picsum.photos/200',
-    sellerUrl: 'https://example.com/seller1',
-    bid: 100,
-    currentBid: 90,
-    market: 1,
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'Item 2',
-    url: 'https://example.com/item2',
-    imageUrl: 'https://picsum.photos/201',
-    sellerUrl: 'https://example.com/seller1',
-    bid: 200,
-    currentBid: 180,
-    market: 2,
-    date: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'Item 3',
-    url: 'https://example.com/item3',
-    imageUrl: 'https://picsum.photos/202',
-    sellerUrl: 'https://example.com/seller2',
-    bid: 150,
-    currentBid: 140,
-    market: 1,
-    date: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    name: 'Item 4',
-    url: 'https://example.com/item4',
-    imageUrl: 'https://picsum.photos/203',
-    sellerUrl: 'https://example.com/seller2',
-    bid: 300,
-    currentBid: 280,
-    market: 2,
-    date: new Date(Date.now() + 96 * 60 * 60 * 1000).toISOString(),
-  }
-];
-
 // Helper function to organize items into groups
 const organizeItemsIntoGroups = (items: Item[]): Item[] => {
   // Group items by seller URL
@@ -94,16 +50,7 @@ export default function Home() {
     const loadItems = async () => {
       try {
         await db.init();
-        let loadedItems = await db.getAllItems();
-        
-        // If no items exist, add sample items
-        if (loadedItems.length === 0) {
-          for (const item of sampleItems) {
-            await db.addItem(item);
-          }
-          loadedItems = await db.getAllItems();
-        }
-        
+        const loadedItems = await db.getAllItems();
         setItems(loadedItems);
       } catch (error) {
         console.error('Failed to load items:', error);
@@ -123,6 +70,7 @@ export default function Home() {
       const id = await db.addItem(item);
       const newItem = { ...item, id };
       setItems(prev => [...prev, newItem]);
+      setIsAddModalOpen(false);
     } catch (error) {
       console.error('Failed to add item:', error);
     }
@@ -132,6 +80,8 @@ export default function Home() {
     try {
       await db.updateItem(item);
       setItems(prev => prev.map(i => i.id === item.id ? item : i));
+      setIsEditModalOpen(false);
+      setSelectedItem(null);
     } catch (error) {
       console.error('Failed to update item:', error);
     }
@@ -171,7 +121,7 @@ export default function Home() {
         <Container maxW="container.2xl" py={8}>
           <HStack justify="space-between" mb={8}>
             <Heading size="lg">Items</Heading>
-            <Button colorScheme="blue" onClick={() => setIsAddModalOpen(true)}>
+            <Button colorScheme="gray" onClick={() => setIsAddModalOpen(true)}>
               Add Item
             </Button>
           </HStack>

@@ -6,7 +6,7 @@ export interface Item {
   sellerUrl: string;
   bid: number;
   currentBid?: number;
-  market: number;
+  market: number; // Market value in currency (e.g., USD)
   date: string;
   archived?: boolean;
   subItems?: Item[]; // Optional array of sub-items with the same structure

@@ -118,13 +118,15 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
                 />
               </FormControl>
               <FormControl isRequired>
-                <FormLabel>Market</FormLabel>
+                <FormLabel>Market Value</FormLabel>
                 <Input
                   name="market"
                   type="number"
+                  step="0.01"
+                  min="0"
                   value={formData.market}
                   onChange={handleChange}
-                  placeholder="Enter market number"
+                  placeholder="Enter market value"
                 />
               </FormControl>
               <FormControl isRequired>

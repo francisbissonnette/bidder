@@ -32,7 +32,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     bid: 0,
     currentBid: 0,
     market: 0,
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
   });
 
   const toast = useToast();
@@ -147,6 +147,15 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
                   value={formData.market}
                   onChange={handleInputChange}
                   placeholder="Enter market value"
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>End Date</FormLabel>
+                <Input
+                  name="date"
+                  type="datetime-local"
+                  value={formData.date}
+                  onChange={handleInputChange}
                 />
               </FormControl>
             </VStack>

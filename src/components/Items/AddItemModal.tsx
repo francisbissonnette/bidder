@@ -23,8 +23,7 @@ interface AddItemModalProps {
 }
 
 const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<Omit<Item, 'id'>>({
+  const initialFormData = {
     name: '',
     url: '',
     imageUrl: '',
@@ -33,9 +32,16 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     currentBid: 0,
     market: 0,
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
-  });
+  };
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState<Omit<Item, 'id'>>(initialFormData);
 
   const toast = useToast();
+
+  const resetForm = () => {
+    setFormData(initialFormData);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -60,6 +66,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
         duration: 3000,
         isClosable: true,
       });
+      resetForm();
       onClose();
     } catch (error) {
       toast({

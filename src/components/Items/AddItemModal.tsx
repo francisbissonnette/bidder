@@ -15,7 +15,6 @@ import {
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { Item } from '@/types/item';
-import { scraperService } from '@/services/scraper';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -24,6 +23,7 @@ interface AddItemModalProps {
 }
 
 const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<Omit<Item, 'id'>>({
     name: '',
     url: '',
@@ -31,89 +31,51 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     sellerUrl: '',
     bid: 0,
     currentBid: 0,
-    market: 1,
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
+    market: 0,
+    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   });
 
-  const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
-  const initialFormData = {
-    name: '',
-    url: '',
-    imageUrl: '',
-    sellerUrl: '',
-    bid: 0,
-    currentBid: 0,
-    market: 1,
-    date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'bid' || name === 'currentBid' || name === 'market' 
+        ? parseFloat(value) || 0 
+        : value
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData) {
-      try {
-        setIsLoading(true);
-        await onAdd(formData);
-        setFormData(initialFormData);
-        onClose();
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to add item',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-  };
+    setIsLoading(true);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'bid' || name === 'market' || name === 'currentBid' ? parseFloat(value) : value,
-    }));
-  };
-
-  const handleUrlChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value;
-    setFormData(prev => ({ ...prev, url }));
-
-    if (url && url.startsWith('http')) {
-      try {
-        setIsLoading(true);
-        const scrapedData = await scraperService.scrapeItem(url);
-        setFormData(prev => ({
-          ...prev,
-          ...scrapedData,
-        }));
-        toast({
-          title: 'Success',
-          description: 'Item details scraped successfully',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to scrape item details',
-          status: 'error',
-          duration: 3000,
-          isClosable: true,
-        });
-      } finally {
-        setIsLoading(false);
-      }
+    try {
+      await onAdd(formData);
+      toast({
+        title: 'Success',
+        description: 'Item added successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add item',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -122,95 +84,82 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
           <ModalBody>
             <VStack spacing={4}>
               <FormControl isRequired>
-                <FormLabel>URL</FormLabel>
-                <Input
-                  name="url"
-                  value={formData.url}
-                  onChange={handleUrlChange}
-                  placeholder="Enter item URL"
-                  isDisabled={isLoading}
-                />
-              </FormControl>
-              <FormControl isRequired>
                 <FormLabel>Name</FormLabel>
                 <Input
                   name="name"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter item name"
-                  isDisabled={isLoading}
                 />
               </FormControl>
               <FormControl isRequired>
+                <FormLabel>URL</FormLabel>
+                <Input
+                  name="url"
+                  value={formData.url}
+                  onChange={handleInputChange}
+                  placeholder="Enter item URL"
+                />
+              </FormControl>
+              <FormControl>
                 <FormLabel>Image URL</FormLabel>
                 <Input
                   name="imageUrl"
                   value={formData.imageUrl}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter image URL"
-                  isDisabled={isLoading}
                 />
               </FormControl>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Seller URL</FormLabel>
                 <Input
                   name="sellerUrl"
                   value={formData.sellerUrl}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter seller URL"
-                  isDisabled={isLoading}
                 />
               </FormControl>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Bid Amount</FormLabel>
                 <Input
                   name="bid"
                   type="number"
                   value={formData.bid}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter bid amount"
-                  isDisabled={isLoading}
                 />
               </FormControl>
-              <FormControl isRequired>
+              <FormControl>
                 <FormLabel>Current Bid</FormLabel>
                 <Input
                   name="currentBid"
                   type="number"
                   value={formData.currentBid}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter current bid"
-                  isDisabled={isLoading}
                 />
               </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Market Value (CAD)</FormLabel>
+              <FormControl>
+                <FormLabel>Market Value</FormLabel>
                 <Input
                   name="market"
                   type="number"
                   value={formData.market}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   placeholder="Enter market value"
-                  isDisabled={isLoading}
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>End Date</FormLabel>
-                <Input
-                  name="date"
-                  type="datetime-local"
-                  value={formData.date}
-                  onChange={handleChange}
-                  isDisabled={isLoading}
                 />
               </FormControl>
             </VStack>
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose} isDisabled={isLoading}>
+            <Button variant="ghost" mr={3} onClick={onClose}>
               Cancel
             </Button>
-            <Button colorScheme="blue" type="submit" isLoading={isLoading}>
+            <Button
+              colorScheme="blue"
+              type="submit"
+              isLoading={isLoading}
+            >
               Add Item
             </Button>
           </ModalFooter>

@@ -18,7 +18,8 @@ import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink, FiRefresh
 import { Item } from '@/types/item';
 import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { exchangeRateService } from '@/services/exchangeRate';
 
 interface ItemsTableProps {
   items: Item[];
@@ -42,6 +43,19 @@ const ItemsTable = ({
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState<number>(0.74);
+
+  useEffect(() => {
+    const fetchExchangeRate = async () => {
+      const rate = await exchangeRateService.getExchangeRate();
+      setExchangeRate(rate);
+    };
+
+    fetchExchangeRate();
+    // Update rate every hour
+    const interval = setInterval(fetchExchangeRate, 1000 * 60 * 60);
+    return () => clearInterval(interval);
+  }, []);
 
   const bgColor = useColorModeValue('white', 'gray.900');
   const subItemBgColor = useColorModeValue('gray.50', 'gray.800');
@@ -92,7 +106,7 @@ const ItemsTable = ({
     return parts[parts.length - 1];
   };
 
-  const renderItem = (item: Item, isSubItem = false) => (
+  const renderItem = (item: Item, isSubItem = false, mainItemDate?: string) => (
     <Tr
       key={item.id}
       bg={isSubItem ? subItemBgColor : bgColor}
@@ -151,9 +165,16 @@ const ItemsTable = ({
       </Td>
       <Td>${item.bid.toFixed(2)}</Td>
       <Td>${item.currentBid?.toFixed(2) || '0.00'}</Td>
-      <Td>${item.market.toFixed(2)}</Td>
       <Td>
-        <Text>{new Date(item.date).toLocaleString()}</Text>
+        <Text>${(item.market * exchangeRate).toFixed(2)} USD</Text>
+        <Text fontSize="sm" color="gray.500">
+          ${item.market.toFixed(2)} CAD
+        </Text>
+      </Td>
+      <Td>
+        <Text color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
+          {new Date(item.date).toLocaleString()}
+        </Text>
         <Text fontSize="sm" color={getTimeRemainingColor(item.date)}>
           {getTimeRemaining(item.date)}
         </Text>
@@ -220,7 +241,7 @@ const ItemsTable = ({
           {items.map((item) => (
             <>
               {renderItem(item)}
-              {item.subItems?.map((subItem) => renderItem(subItem, true))}
+              {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
             </>
           ))}
         </Tbody>

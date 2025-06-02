@@ -25,10 +25,14 @@ const organizeItemsIntoGroups = (items: Item[]): Item[] => {
 
   // For each group, find the main item (highest market) and organize others as sub-items
   return Object.values(groups).map(group => {
-    // Sort by market in descending order
-    const sortedGroup = [...group].sort((a, b) => b.market - a.market);
-    const mainItem = sortedGroup[0];
-    const subItems = sortedGroup.slice(1);
+    // Sort by market in descending order for main item
+    const sortedByMarket = [...group].sort((a, b) => b.market - a.market);
+    const mainItem = sortedByMarket[0];
+    
+    // Sort subitems by end time (sooner first)
+    const subItems = sortedByMarket.slice(1).sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
 
     // Create a new object for the main item with subItems
     return {

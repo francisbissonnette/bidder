@@ -164,6 +164,35 @@ class DatabaseService {
       };
     });
   }
+
+  async restoreItem(id: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error('Database not initialized'));
+        return;
+      }
+
+      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(id);
+
+      request.onsuccess = () => {
+        const item = request.result;
+        if (item) {
+          item.archived = false;
+          const updateRequest = store.put(item);
+          updateRequest.onsuccess = () => resolve();
+          updateRequest.onerror = () => reject(updateRequest.error);
+        } else {
+          reject(new Error('Item not found'));
+        }
+      };
+
+      request.onerror = () => {
+        reject(request.error);
+      };
+    });
+  }
 }
 
 export const db = new DatabaseService(); 

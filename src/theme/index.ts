@@ -48,7 +48,9 @@ const theme = extendTheme({
       },
       variants: {
         solid: {
-          bg: 'blue.500',
+          bg: 'gray.900',
+          borderColor:'gray.700',
+          borderWidth:'1px',
           color: 'white',
           _hover: {
             bg: 'blue.600',
@@ -66,6 +68,7 @@ const theme = extendTheme({
     },
     Link: {
       baseStyle: {
+        color: 'gray.400',  
         _hover: {
           textDecoration: 'none',
         },

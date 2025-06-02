@@ -58,6 +58,15 @@ export default function Archives() {
   // Organize items into groups with main items and sub-items
   const organizedItems = useMemo(() => organizeItemsIntoGroups(items), [items]);
 
+  const handleRestoreItem = async (id: number) => {
+    try {
+      await db.restoreItem(id);
+      setItems(prev => prev.filter(item => item.id !== id));
+    } catch (error) {
+      console.error('Failed to restore item:', error);
+    }
+  };
+
   if (isLoading) {
     return (
       <ChakraProvider theme={theme}>
@@ -81,6 +90,7 @@ export default function Archives() {
             onAddItem={() => {}} // Disabled for archives
             onEditItem={() => {}} // Disabled for archives
             onDeleteItem={() => {}} // Disabled for archives
+            onRestoreItem={handleRestoreItem}
             isArchive={true}
           />
         </Container>

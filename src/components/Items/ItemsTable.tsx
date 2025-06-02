@@ -14,7 +14,7 @@ import {
   useColorModeValue,
   Link,
 } from '@chakra-ui/react';
-import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import { Item } from '@/types/item';
 import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
@@ -26,6 +26,7 @@ interface ItemsTableProps {
   onEditItem: (item: Item) => void;
   onDeleteItem: (item: Item) => void;
   onArchiveItem?: (id: number) => void;
+  onRestoreItem?: (id: number) => void;
   isArchive?: boolean;
 }
 
@@ -35,6 +36,7 @@ const ItemsTable = ({
   onEditItem,
   onDeleteItem,
   onArchiveItem,
+  onRestoreItem,
   isArchive = false,
 }: ItemsTableProps) => {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
@@ -71,6 +73,20 @@ const ItemsTable = ({
     return `${minutes}m`;
   };
 
+  const getTimeRemainingColor = (date: string) => {
+    const endDate = new Date(date);
+    const now = new Date();
+    const diff = endDate.getTime() - now.getTime();
+    
+    if (diff <= 0) return 'gray.500';
+    
+    const minutes = Math.floor(diff / (1000 * 60));
+    
+    if (minutes > 60) return 'green.500';
+    if (minutes > 10) return 'orange.500';
+    return 'red.500';
+  };
+
   const getSellerName = (url: string) => {
     const parts = url.split('/');
     return parts[parts.length - 1];
@@ -88,9 +104,9 @@ const ItemsTable = ({
         <Flex align="center" gap={4}>
           <Box
             position="relative"
-            width={isSubItem ? "80px" : "100px"}
-            height={isSubItem ? "105px" : "135px"}
-            marginLeft={isSubItem ? "20px" : "0"}
+            width={isSubItem ? "60px" : "80px"}
+            height={isSubItem ? "85px" : "115px"}
+            marginLeft={isSubItem ? "15px" : "0"}
             overflow="hidden"
             borderRadius="md"
           >
@@ -101,7 +117,7 @@ const ItemsTable = ({
               height={isSubItem ? "210px" : "270px"}
               position="absolute"
               objectFit="cover"
-              top="50%"
+              top="070%"
               left="50%"
               transform="translate(-50%, -50%)"
 
@@ -138,22 +154,25 @@ const ItemsTable = ({
       <Td>${item.market.toFixed(2)}</Td>
       <Td>
         <Text>{new Date(item.date).toLocaleString()}</Text>
-        <Text fontSize="sm" color="gray.500">{getTimeRemaining(item.date)}</Text>
+        <Text fontSize="sm" color={getTimeRemainingColor(item.date)}>
+          {getTimeRemaining(item.date)}
+        </Text>
       </Td>
       <Td>
-        {!isArchive && (
+        {!isArchive ? (
           <Flex gap={2}>
             <IconButton
               aria-label="Edit item"
               icon={<Icon as={FiEdit2} />}
               size="sm"
+              colorScheme="gray"
               onClick={() => handleEdit(item)}
             />
             <IconButton
               aria-label="Delete item"
               icon={<Icon as={FiTrash2} />}
               size="sm"
-              colorScheme="red"
+              colorScheme="gray"
               onClick={() => handleDelete(item)}
             />
             {onArchiveItem && (
@@ -161,8 +180,20 @@ const ItemsTable = ({
                 aria-label="Archive item"
                 icon={<Icon as={FiArchive} />}
                 size="sm"
-                colorScheme="purple"
+                colorScheme="gray"
                 onClick={() => onArchiveItem(item.id!)}
+              />
+            )}
+          </Flex>
+        ) : (
+          <Flex gap={2}>
+            {onRestoreItem && (
+              <IconButton
+                aria-label="Restore item"
+                icon={<Icon as={FiRefreshCw} />}
+                size="sm"
+                colorScheme="gray"
+                onClick={() => onRestoreItem(item.id!)}
               />
             )}
           </Flex>

@@ -42,7 +42,8 @@ class DatabaseService {
       const request = store.getAll();
 
       request.onsuccess = () => {
-        resolve(request.result);
+        const items = request.result as Item[];
+        resolve(items.filter(item => !item.archived));
       };
 
       request.onerror = () => {

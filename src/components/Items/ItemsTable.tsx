@@ -20,6 +20,7 @@ import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
 import { useState, useEffect } from 'react';
 import { exchangeRateService } from '@/services/exchangeRate';
+import { knownSellers } from '@/types/seller';
 
 interface ItemsTableProps {
   items: Item[];
@@ -102,6 +103,10 @@ const ItemsTable = ({
   };
 
   const getSellerName = (url: string) => {
+    const knownSeller = knownSellers.find(seller => seller.url === url);
+    if (knownSeller) {
+      return knownSeller.name;
+    }
     const parts = url.split('/');
     return parts[parts.length - 1];
   };
@@ -112,7 +117,7 @@ const ItemsTable = ({
       bg={isSubItem ? subItemBgColor : bgColor}
       borderBottomWidth="2px"
       borderBottomColor="gray.600"
-      fontSize="18px"
+      fontSize="1rem"
     >
       <Td>
         <Flex align="center" gap={4}>
@@ -134,7 +139,6 @@ const ItemsTable = ({
               top="070%"
               left="50%"
               transform="translate(-50%, -50%)"
-
               objectPosition="55% 55%"
             />
           </Box>
@@ -145,6 +149,7 @@ const ItemsTable = ({
             color="blue.500"
             _hover={{ textDecoration: 'underline' }}
             fontWeight={isSubItem ? 'normal' : 'bold'}
+            fontSize="1rem"
           >
             {item.name}
             <Icon as={FiExternalLink} ml={1} boxSize={3} />
@@ -158,24 +163,25 @@ const ItemsTable = ({
           rel="noopener noreferrer"
           color="blue.500"
           _hover={{ textDecoration: 'underline' }}
+          fontSize="1rem"
         >
-          {getSellerName(item.sellerUrl)}
+          {item.seller || getSellerName(item.sellerUrl)}
           <Icon as={FiExternalLink} ml={1} boxSize={3} />
         </Link>
       </Td>
-      <Td>${item.bid.toFixed(2)}</Td>
-      <Td>${item.currentBid?.toFixed(2) || '0.00'}</Td>
+      <Td fontSize="1rem">${item.bid.toFixed(2)}</Td>
+      <Td fontSize="1rem">${item.currentBid?.toFixed(2) || '0.00'}</Td>
       <Td>
-        <Text>${(item.market * exchangeRate).toFixed(2)} USD</Text>
-        <Text fontSize="sm" color="gray.500">
+        <Text fontSize="1rem">${(item.market * exchangeRate).toFixed(2)} USD</Text>
+        <Text fontSize="0.875rem" color="gray.500">
           ${item.market.toFixed(2)} CAD
         </Text>
       </Td>
       <Td>
-        <Text color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
+        <Text fontSize="1rem" color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
           {new Date(item.date).toLocaleString()}
         </Text>
-        <Text fontSize="sm" color={getTimeRemainingColor(item.date)}>
+        <Text fontSize="0.875rem" color={getTimeRemainingColor(item.date)}>
           {getTimeRemaining(item.date)}
         </Text>
       </Td>
@@ -228,13 +234,13 @@ const ItemsTable = ({
       <Table variant="simple">
         <Thead>
           <Tr>
-            <Th>Item</Th>
-            <Th>Seller</Th>
-            <Th>Bid</Th>
-            <Th>Current</Th>
-            <Th>Market</Th>
-            <Th>Date</Th>
-            <Th>Actions</Th>
+            <Th fontSize="1rem">Item</Th>
+            <Th fontSize="1rem">Seller</Th>
+            <Th fontSize="1rem">Bid</Th>
+            <Th fontSize="1rem">Current</Th>
+            <Th fontSize="1rem">Market</Th>
+            <Th fontSize="1rem">Date</Th>
+            <Th fontSize="1rem">Actions</Th>
           </Tr>
         </Thead>
         <Tbody>

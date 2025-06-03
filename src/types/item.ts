@@ -4,6 +4,7 @@ export interface Item {
   url: string;
   imageUrl: string;
   sellerUrl: string;
+  seller?: string;
   bid: number;
   currentBid?: number;
   market: number; // Market value in currency (e.g., USD)

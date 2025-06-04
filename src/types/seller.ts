@@ -43,7 +43,7 @@ export const knownSellers: Seller[] = [
   {
     id: '524',
     name: 'CGTA',  
-    url: 'https://www.cardhobby.com/#/seller/detail/524
+    url: 'https://www.cardhobby.com/#/seller/detail/524'
   }, 
   
   // Add more sellers here as needed

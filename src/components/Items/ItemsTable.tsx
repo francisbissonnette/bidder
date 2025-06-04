@@ -45,6 +45,7 @@ const ItemsTable = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number>(0.74);
+  const [, forceUpdate] = useState({});
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
@@ -54,8 +55,17 @@ const ItemsTable = ({
 
     fetchExchangeRate();
     // Update rate every hour
-    const interval = setInterval(fetchExchangeRate, 1000 * 60 * 60);
-    return () => clearInterval(interval);
+    const rateInterval = setInterval(fetchExchangeRate, 1000 * 60 * 60);
+
+    // Update time remaining every minute
+    const timeInterval = setInterval(() => {
+      forceUpdate({});
+    }, 1000 * 60);
+
+    return () => {
+      clearInterval(rateInterval);
+      clearInterval(timeInterval);
+    };
   }, []);
 
   const bgColor = useColorModeValue('white', 'gray.900');

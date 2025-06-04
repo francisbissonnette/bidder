@@ -34,6 +34,17 @@ export const knownSellers: Seller[] = [
     id: '642291',
     name: '来来来',  
     url: 'https://www.cardhobby.com/#/seller/detail/642291'
-  }
+  },  
+  {
+    id: '174087',
+    name: 'VCVIKI',  
+    url: 'https://www.cardhobby.com/#/seller/detail/642291'
+  }, 
+  {
+    id: '524',
+    name: 'CGTA',  
+    url: 'https://www.cardhobby.com/#/seller/detail/524
+  }, 
+  
   // Add more sellers here as needed
 ]; 

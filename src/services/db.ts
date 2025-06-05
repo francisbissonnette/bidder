@@ -1,198 +1,104 @@
 import { Item } from '@/types/item';
 
-const DB_NAME = 'bidderDB';
-const STORE_NAME = 'items';
-const DB_VERSION = 3;
-
 class DatabaseService {
-  private db: IDBDatabase | null = null;
+  private items: Item[] = [];
 
   async init(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve();
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result;
-        if (db.objectStoreNames.contains(STORE_NAME)) {
-          db.deleteObjectStore(STORE_NAME);
-        }
-        db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-      };
-    });
+    try {
+      const response = await fetch('/api/items');
+      if (!response.ok) {
+        throw new Error('Failed to fetch items');
+      }
+      this.items = await response.json();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      throw error;
+    }
   }
 
   async getAllItems(): Promise<Item[]> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const items = request.result as Item[];
-        resolve(items.filter(item => !item.archived));
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this.items.filter(item => !item.archived);
   }
 
   async getArchivedItems(): Promise<Item[]> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readonly');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.getAll();
-
-      request.onsuccess = () => {
-        const items = request.result as Item[];
-        resolve(items.filter(item => item.archived));
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    return this.items.filter(item => item.archived);
   }
 
   async addItem(item: Omit<Item, 'id'>): Promise<number> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.add(item);
-
-      request.onsuccess = () => {
-        resolve(request.result as number);
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+    const response = await fetch('/api/items', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(item),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to add item');
+    }
+
+    const { id } = await response.json();
+    const newItem = { ...item, id };
+    this.items.push(newItem);
+    return id;
   }
 
   async updateItem(item: Item): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.put(item);
-
-      request.onsuccess = () => {
-        resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+    const response = await fetch('/api/items', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(item),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to update item');
+    }
+
+    const index = this.items.findIndex(i => i.id === item.id);
+    if (index === -1) {
+      throw new Error('Item not found');
+    }
+    this.items[index] = item;
   }
 
   async deleteItem(id: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.delete(id);
-
-      request.onsuccess = () => {
-        resolve();
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
+    const response = await fetch('/api/items', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ id }),
     });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete item');
+    }
+
+    const index = this.items.findIndex(i => i.id === id);
+    if (index === -1) {
+      throw new Error('Item not found');
+    }
+    this.items.splice(index, 1);
   }
 
   async archiveItem(id: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        const item = request.result;
-        if (item) {
-          item.archived = true;
-          const updateRequest = store.put(item);
-          updateRequest.onsuccess = () => resolve();
-          updateRequest.onerror = () => reject(updateRequest.error);
-        } else {
-          reject(new Error('Item not found'));
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    const item = this.items.find(i => i.id === id);
+    if (!item) {
+      throw new Error('Item not found');
+    }
+    item.archived = true;
+    await this.updateItem(item);
   }
 
   async restoreItem(id: number): Promise<void> {
-    return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error('Database not initialized'));
-        return;
-      }
-
-      const transaction = this.db.transaction(STORE_NAME, 'readwrite');
-      const store = transaction.objectStore(STORE_NAME);
-      const request = store.get(id);
-
-      request.onsuccess = () => {
-        const item = request.result;
-        if (item) {
-          item.archived = false;
-          const updateRequest = store.put(item);
-          updateRequest.onsuccess = () => resolve();
-          updateRequest.onerror = () => reject(updateRequest.error);
-        } else {
-          reject(new Error('Item not found'));
-        }
-      };
-
-      request.onerror = () => {
-        reject(request.error);
-      };
-    });
+    const item = this.items.find(i => i.id === id);
+    if (!item) {
+      throw new Error('Item not found');
+    }
+    item.archived = false;
+    await this.updateItem(item);
   }
 }
 

@@ -24,6 +24,7 @@ import { exchangeRateService } from '@/services/exchangeRate';
 import { knownSellers } from '@/types/seller';
 import React from 'react';
 import { scraper } from '@/services/scraper';
+import { db } from '@/services/db';
 
 interface ItemsTableProps {
   items: Item[];
@@ -56,40 +57,33 @@ const ItemsTable = ({
   }, [items]);
 
   const updateBidAmounts = async () => {
-    const updatedItems = await Promise.all(
-      localItems.map(async (item) => {
-        try {
-          const scrapedData = await scraper.scrapeItem(item.url);
-          if (scrapedData) {
+    try {
+      const updatedItems = await Promise.all(
+        items.map(async (item) => {
+          try {
+            const scrapedData = await scraper.scrapeItem(item.url);
+            if (!scrapedData) return item;
+
+            const updatedItem = {
+              ...item,
+              bid: scrapedData.bid,
+              currentBid: scrapedData.currentBid,
+            };
+
             // Only update if bid or currentBid has changed
-            if (scrapedData.bid !== item.bid || scrapedData.currentBid !== item.currentBid) {
-              const updatedItem = {
-                ...item,
-                bid: scrapedData.bid,
-                currentBid: scrapedData.currentBid,
-                market: item.market,
-                subItems: item.subItems?.map(subItem => ({
-                  ...subItem,
-                  bid: scrapedData.bid,
-                  currentBid: scrapedData.currentBid,
-                  market: subItem.market
-                }))
-              };
-              console.log('Updating item in DB:', updatedItem);
-              // Update the item in the database
+            if (updatedItem.bid !== item.bid || updatedItem.currentBid !== item.currentBid) {
               await onEditItem(updatedItem);
-              return updatedItem;
             }
+
+            return updatedItem;
+          } catch (error) {
+            console.error(`Failed to update item ${item.id}:`, error);
+            return item;
           }
-        } catch (error) {
-          console.error('Failed to update bid amounts for item:', item.id, error);
-        }
-        return item;
-      })
-    );
-    // Only update if we have items
-    if (updatedItems.length > 0) {
-      setLocalItems(updatedItems);
+        })
+      );
+    } catch (error) {
+      console.error('Failed to update bid amounts:', error);
     }
   };
 

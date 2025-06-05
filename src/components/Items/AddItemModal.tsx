@@ -141,6 +141,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
       resetForm();
       onClose();
     } catch (error) {
+      console.error('Failed to add item:', error);
       toast({
         title: 'Error',
         description: 'Failed to add item',

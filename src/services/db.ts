@@ -39,7 +39,7 @@ class DatabaseService {
 
     const { id } = await response.json();
     const newItem = { ...item, id };
-    this.items.push(newItem);
+    this.items = [...this.items, newItem];
     return id;
   }
 

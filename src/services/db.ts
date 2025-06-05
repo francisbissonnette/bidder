@@ -1,104 +1,210 @@
 import { Item } from '@/types/item';
+import { supabase } from '@/lib/supabase';
 
 class DatabaseService {
   private items: Item[] = [];
 
   async init(): Promise<void> {
-    try {
-      const response = await fetch('/api/items');
-      if (!response.ok) {
-        throw new Error('Failed to fetch items');
-      }
-      this.items = await response.json();
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('archived', false);
+
+    if (error) {
+      console.error('Error initializing database:', error);
       throw error;
     }
+
+    this.items = data?.map(item => ({
+      id: item.id,
+      name: item.name,
+      url: item.url,
+      imageUrl: item.image_url,
+      sellerUrl: item.seller_url,
+      bid: item.bid,
+      currentBid: item.current_bid,
+      market: item.market,
+      date: item.date,
+      seller: item.seller,
+      archived: item.archived
+    })) || [];
   }
 
   async getAllItems(): Promise<Item[]> {
-    return this.items.filter(item => !item.archived);
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('archived', false);
+
+    if (error) {
+      console.error('Error getting items:', error);
+      throw error;
+    }
+
+    this.items = data?.map(item => ({
+      id: item.id,
+      name: item.name,
+      url: item.url,
+      imageUrl: item.image_url,
+      sellerUrl: item.seller_url,
+      bid: item.bid,
+      currentBid: item.current_bid,
+      market: item.market,
+      date: item.date,
+      seller: item.seller,
+      archived: item.archived
+    })) || [];
+    return this.items;
   }
 
   async getArchivedItems(): Promise<Item[]> {
-    return this.items.filter(item => item.archived);
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .eq('archived', true);
+
+    if (error) {
+      console.error('Error getting archived items:', error);
+      throw error;
+    }
+
+    return data || [];
   }
 
   async addItem(item: Omit<Item, 'id'>): Promise<number> {
-    const response = await fetch('/api/items', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(item),
-    });
+    const { data, error } = await supabase
+      .from('items')
+      .insert([{
+        name: item.name,
+        url: item.url,
+        image_url: item.imageUrl,
+        seller_url: item.sellerUrl,
+        bid: item.bid,
+        current_bid: item.currentBid,
+        market: item.market,
+        date: item.date,
+        seller: item.seller,
+        archived: false
+      }])
+      .select()
+      .single();
 
-    if (!response.ok) {
-      throw new Error('Failed to add item');
+    if (error) {
+      console.error('Error adding item:', error);
+      throw error;
     }
 
-    const { id } = await response.json();
-    const newItem = { ...item, id };
+    if (!data) {
+      throw new Error('No data returned from insert');
+    }
+
+    const newItem = {
+      id: data.id,
+      name: data.name,
+      url: data.url,
+      imageUrl: data.image_url,
+      sellerUrl: data.seller_url,
+      bid: data.bid,
+      currentBid: data.current_bid,
+      market: data.market,
+      date: data.date,
+      seller: data.seller,
+      archived: data.archived
+    };
+
     this.items = [...this.items, newItem];
-    return id;
+    return data.id;
   }
 
   async updateItem(item: Item): Promise<void> {
-    const response = await fetch('/api/items', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(item),
-    });
+    const { error } = await supabase
+      .from('items')
+      .update({
+        name: item.name,
+        url: item.url,
+        image_url: item.imageUrl,
+        seller_url: item.sellerUrl,
+        bid: item.bid,
+        current_bid: item.currentBid,
+        market: item.market,
+        date: item.date,
+        seller: item.seller,
+        archived: item.archived
+      })
+      .eq('id', item.id);
 
-    if (!response.ok) {
-      throw new Error('Failed to update item');
+    if (error) {
+      console.error('Error updating item:', error);
+      throw error;
     }
 
     const index = this.items.findIndex(i => i.id === item.id);
-    if (index === -1) {
-      throw new Error('Item not found');
+    if (index !== -1) {
+      this.items[index] = item;
     }
-    this.items[index] = item;
   }
 
   async deleteItem(id: number): Promise<void> {
-    const response = await fetch('/api/items', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ id }),
-    });
+    const { error } = await supabase
+      .from('items')
+      .delete()
+      .eq('id', id);
 
-    if (!response.ok) {
-      throw new Error('Failed to delete item');
+    if (error) {
+      console.error('Error deleting item:', error);
+      throw error;
     }
 
-    const index = this.items.findIndex(i => i.id === id);
-    if (index === -1) {
-      throw new Error('Item not found');
-    }
-    this.items.splice(index, 1);
+    this.items = this.items.filter(item => item.id !== id);
   }
 
   async archiveItem(id: number): Promise<void> {
-    const item = this.items.find(i => i.id === id);
-    if (!item) {
-      throw new Error('Item not found');
+    const { error } = await supabase
+      .from('items')
+      .update({ archived: true })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error archiving item:', error);
+      throw error;
     }
-    item.archived = true;
-    await this.updateItem(item);
+
+    this.items = this.items.filter(item => item.id !== id);
   }
 
   async restoreItem(id: number): Promise<void> {
-    const item = this.items.find(i => i.id === id);
-    if (!item) {
-      throw new Error('Item not found');
+    const { error } = await supabase
+      .from('items')
+      .update({ archived: false })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error restoring item:', error);
+      throw error;
     }
-    item.archived = false;
-    await this.updateItem(item);
+
+    const { data } = await supabase
+      .from('items')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (data) {
+      const restoredItem = {
+        id: data.id,
+        name: data.name,
+        url: data.url,
+        imageUrl: data.image_url,
+        sellerUrl: data.seller_url,
+        bid: data.bid,
+        currentBid: data.current_bid,
+        market: data.market,
+        date: data.date,
+        seller: data.seller,
+        archived: data.archived
+      };
+      this.items = [...this.items, restoredItem];
+    }
   }
 }
 

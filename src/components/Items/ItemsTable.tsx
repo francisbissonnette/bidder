@@ -13,6 +13,7 @@ import {
   Text,
   useColorModeValue,
   Link,
+  VStack,
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
 import { Item } from '@/types/item';
@@ -153,10 +154,11 @@ const ItemsTable = ({
   const renderItem = (item: Item, isSubItem = false, mainItemDate?: string) => (
     <Tr
       key={item.id}
-      bg={isSubItem ? subItemBgColor : bgColor}
+      bg={isSubItem ? bgColor : subItemBgColor}
       borderBottomWidth="2px"
       borderBottomColor="gray.600"
       fontSize="1rem"
+      mb={!isSubItem ? "20px" : "0"}
     >
       <Td>
         <Flex align="center" gap={4}>
@@ -287,6 +289,9 @@ const ItemsTable = ({
             <React.Fragment key={item.id}>
               {renderItem(item)}
               {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
+              <Tr>
+                <Td colSpan={7} h="20px" p={0}></Td>
+              </Tr>
             </React.Fragment>
           ))}
         </Tbody>

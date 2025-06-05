@@ -21,6 +21,8 @@ import DeleteItemModal from './DeleteItemModal';
 import { useState, useEffect } from 'react';
 import { exchangeRateService } from '@/services/exchangeRate';
 import { knownSellers } from '@/types/seller';
+import React from 'react';
+import { scraper } from '@/services/scraper';
 
 interface ItemsTableProps {
   items: Item[];
@@ -45,7 +47,33 @@ const ItemsTable = ({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [exchangeRate, setExchangeRate] = useState<number>(0.74);
+  const [localItems, setLocalItems] = useState<Item[]>(items);
   const [, forceUpdate] = useState({});
+
+  useEffect(() => {
+    setLocalItems(items);
+  }, [items]);
+
+  const updateBidAmounts = async () => {
+    const updatedItems = await Promise.all(
+      localItems.map(async (item) => {
+        try {
+          const scrapedData = await scraper.scrapeItem(item.url);
+          if (scrapedData) {
+            return {
+              ...item,
+              bid: scrapedData.bid,
+              currentBid: scrapedData.currentBid,
+            };
+          }
+        } catch (error) {
+          console.error('Failed to update bid amounts for item:', item.id, error);
+        }
+        return item;
+      })
+    );
+    setLocalItems(updatedItems);
+  };
 
   useEffect(() => {
     const fetchExchangeRate = async () => {
@@ -57,9 +85,10 @@ const ItemsTable = ({
     // Update rate every hour
     const rateInterval = setInterval(fetchExchangeRate, 1000 * 60 * 60);
 
-    // Update time remaining every minute
+    // Update time remaining and bid amounts every minute
     const timeInterval = setInterval(() => {
       forceUpdate({});
+      updateBidAmounts();
     }, 1000 * 60);
 
     return () => {
@@ -254,11 +283,11 @@ const ItemsTable = ({
           </Tr>
         </Thead>
         <Tbody>
-          {items.map((item) => (
-            <>
+          {localItems.map((item) => (
+            <React.Fragment key={item.id}>
               {renderItem(item)}
               {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
-            </>
+            </React.Fragment>
           ))}
         </Tbody>
       </Table>

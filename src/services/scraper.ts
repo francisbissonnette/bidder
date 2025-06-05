@@ -30,6 +30,16 @@ class ScraperService {
   }
 
   private initializeScrapers() {
+    // Helper function to remove Chinese characters
+    const removeChineseCharacters = (text: string): string => {
+      // Remove Chinese characters (Unicode range for Chinese characters)
+      return text.replace(/[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff\uf900-\ufaff\u3300-\u33ff\ufe30-\ufe4f\uf900-\ufaff\uff00-\uffef]/g, '')
+        // Remove multiple spaces
+        .replace(/\s+/g, ' ')
+        // Trim spaces
+        .trim();
+    };
+
     // Card Hobby Scraper
     this.scrapers.set('cardhobby', {
       name: 'Card Hobby',
@@ -39,31 +49,62 @@ class ScraperService {
         timeWindow: 1000 * 60 // 1 minute
       },
       validateData: (data: any) => {
-        console.log('Validating Card Hobby data:', data);
-        const isValid = data?.data?.imageUrl != null && 
-               typeof data?.data?.price === 'number' &&
-               typeof data?.data?.title === 'string';
-        console.log('Validation result:', isValid);
+        console.log('🔍 [Scraper] Validating Card Hobby data:', data);
+        const isValid = data?.data?.TitImg != null && 
+               typeof data?.data?.USD_Price === 'string' &&
+               typeof data?.data?.Title === 'string';
+        console.log('✅ [Scraper] Validation result:', isValid);
         return isValid;
       },
       extractData: async (url: string, data: any) => {
-        console.log('Extracting Card Hobby data:', data);
-        const imageUrl = data.data?.imageUrl || '';
-        const currentBid = data.data?.price || 0;
-        const name = data.data?.title || 'Unknown Item';
-        const sellerUrl = data.data?.sellerUrl || window.location.origin;
+        console.log('🔍 [Scraper] Extracting Card Hobby data:', data);
+        console.log('🔍 [Scraper] Full API response structure:', JSON.stringify(data, null, 2));
+        console.log('🔍 [Scraper] Data object keys:', Object.keys(data.data || {}));
+        
+        const imageUrl = data.data?.TitImg || '';
+        const currentBid = parseFloat(data.data?.USD_Price) || 0;
+        const bid = parseFloat(data.data?.USD_HighestPrice) || 0;
+        const rawTitle = data.data?.Title || 'Unknown Item';
+        console.log('📝 [Scraper] Raw title:', rawTitle);
+        
+        const name = removeChineseCharacters(rawTitle);
+        console.log('📝 [Scraper] Cleaned title:', name);
+        
+        const sellerUrl = data.data?.SellRealName ? `https://www.cardhobby.com/#/shop/${data.data.SellRealName}` : window.location.origin;
+
+        // Get the date from EffectiveTime
+        let formattedDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+        if (data.data?.EffectiveTime) {
+          console.log('📅 [Scraper] Raw EffectiveTime:', data.data.EffectiveTime);
+          // Parse the date string (format: "2025/6/5 20:23:30")
+          const [datePart, timePart] = data.data.EffectiveTime.split(' ');
+          const [year, month, day] = datePart.split('/');
+          const [hours, minutes] = timePart.split(':');
+          
+          // Subtract 12 hours
+          let adjustedHours = parseInt(hours) - 12;
+          if (adjustedHours < 0) {
+            adjustedHours += 24;
+          }
+          
+          // Format as YYYY-MM-DDThh:mm
+          formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${String(adjustedHours).padStart(2, '0')}:${minutes}`;
+          console.log('📅 [Scraper] Formatted date (12h subtracted):', formattedDate);
+        } else {
+          console.log('⚠️ [Scraper] No EffectiveTime found in response');
+        }
 
         const result = {
           name,
           url,
           imageUrl,
           sellerUrl,
-          bid: 0,
+          bid,
           currentBid,
           market: 0,
-          date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          date: formattedDate,
         };
-        console.log('Extracted data:', result);
+        console.log('✅ [Scraper] Extracted data:', result);
         return result;
       }
     });
@@ -131,21 +172,23 @@ class ScraperService {
   }
 
   private async handleCardHobbyScrape(url: string): Promise<any> {
-    console.log('Starting Card Hobby scrape for URL:', url);
+    console.log('🔍 [Scraper] Starting Card Hobby scrape for URL:', url);
     // Extract card ID from URL like https://www.cardhobby.com/#/carddetails/67180979
     const cardId = url.match(/carddetails\/(\d+)/)?.[1];
     if (!cardId) {
+      console.error('❌ [Scraper] Invalid URL format - could not extract card ID');
       throw new Error('Invalid URL format');
     }
-    console.log('Extracted card ID:', cardId);
+    console.log('✅ [Scraper] Extracted card ID:', cardId);
 
     await this.waitForRateLimit('cardhobby');
 
     // Get the specific card details using the direct API endpoint
-    const apiUrl = `https://gatewayapi.cardhobby.com/card/NewMyCommodity/GetCardDetail?cardId=${cardId}&lag=en&device=Web&version=1&appname=Card+Hobby`;
-    console.log('Fetching card details from:', apiUrl);
+    const apiUrl = `https://gatewayapi.cardhobby.com/card/Commodity/DetailCommodity/?memberid=499559&token=b9e22c0e118ce211f9611a818cc5c0b0&operator_id=499559&CommodityID=${cardId}&buyerSource=CA&lag=en&device=Web&version=1&appname=Card+Hobby`;
+    console.log('🌐 [Scraper] Fetching card details from:', apiUrl);
     
     try {
+      console.log('📡 [Scraper] Sending API request...');
       const response = await this.fetchWithRetry(apiUrl, {
         method: 'GET',
         headers: {
@@ -166,23 +209,27 @@ class ScraperService {
       });
 
       if (!response.ok) {
+        console.error('❌ [Scraper] API request failed with status:', response.status);
         if (response.status === 404) {
           throw new Error('Card not found. Please verify the card ID is correct.');
         }
         throw new Error(`API request failed: ${response.status}`);
       }
 
+      console.log('✅ [Scraper] API request successful, parsing response...');
       const data = await response.json();
-      console.log('Card details response:', data);
+      console.log('📦 [Scraper] Raw API response:', data);
 
       // Check if the response contains valid data
       if (!data?.data) {
+        console.error('❌ [Scraper] Invalid response format - missing data field');
         throw new Error('Invalid response format from API');
       }
 
+      console.log('✅ [Scraper] Successfully parsed API response');
       return data;
     } catch (error) {
-      console.error('Error fetching card details:', error);
+      console.error('❌ [Scraper] Error fetching card details:', error);
       throw error;
     }
   }
@@ -257,4 +304,4 @@ class ScraperService {
   }
 }
 
-export const scraperService = ScraperService.getInstance(); 
+export const scraper = ScraperService.getInstance(); 

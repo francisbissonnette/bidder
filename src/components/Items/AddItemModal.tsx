@@ -15,10 +15,13 @@ import {
   Select,
   Grid,
   GridItem,
+  InputGroup,
+  InputRightElement,
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Item } from '@/types/item';
 import { knownSellers } from '@/types/seller';
+import { scraper } from '@/services/scraper';
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -39,6 +42,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
   };
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [formData, setFormData] = useState<Omit<Item, 'id'>>(initialFormData);
   const [selectedSeller, setSelectedSeller] = useState<string>('');
 
@@ -49,14 +53,56 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     setSelectedSeller('');
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    console.log('📝 [Modal] Input changed:', { name, value });
+    
     setFormData(prev => ({
       ...prev,
       [name]: name === 'bid' || name === 'currentBid' || name === 'market' 
         ? parseFloat(value) || 0 
         : value
     }));
+
+    // If URL is changed and it's a Card Hobby URL, fetch the data
+    if (name === 'url' && value.match(/cardhobby\.com\/#\/carddetails\/\d+/)) {
+      console.log('🔍 [Modal] Detected Card Hobby URL, starting fetch process');
+      setIsFetching(true);
+      try {
+        console.log('📡 [Modal] Calling scraper service...');
+        const scrapedData = await scraper.scrapeItem(value);
+        console.log('✅ [Modal] Received scraped data:', scrapedData);
+        
+        setFormData(prev => {
+          const newData = {
+            ...prev,
+            ...scrapedData
+          };
+          console.log('📝 [Modal] Updated form data:', newData);
+          return newData;
+        });
+        
+        toast({
+          title: 'Success',
+          description: 'Item details fetched successfully',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+      } catch (error) {
+        console.error('❌ [Modal] Error fetching item details:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch item details',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsFetching(false);
+        console.log('✅ [Modal] Fetch process completed');
+      }
+    }
   };
 
   const handleSellerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -136,12 +182,19 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
                   </FormControl>
                   <FormControl isRequired>
                     <FormLabel>URL</FormLabel>
-                    <Input
-                      name="url"
-                      value={formData.url}
-                      onChange={handleInputChange}
-                      placeholder="Enter item URL"
-                    />
+                    <InputGroup>
+                      <Input
+                        name="url"
+                        value={formData.url}
+                        onChange={handleInputChange}
+                        placeholder="Enter item URL"
+                      />
+                      {isFetching && (
+                        <InputRightElement>
+                          <Button size="sm" isLoading />
+                        </InputRightElement>
+                      )}
+                    </InputGroup>
                   </FormControl>
                   <FormControl>
                     <FormLabel>Image URL</FormLabel>

@@ -67,10 +67,12 @@ const ItemsTable = ({
                 ...item,
                 bid: scrapedData.bid,
                 currentBid: scrapedData.currentBid,
+                market: item.market,
                 subItems: item.subItems?.map(subItem => ({
                   ...subItem,
                   bid: scrapedData.bid,
-                  currentBid: scrapedData.currentBid
+                  currentBid: scrapedData.currentBid,
+                  market: subItem.market
                 }))
               };
               console.log('Updating item in DB:', updatedItem);

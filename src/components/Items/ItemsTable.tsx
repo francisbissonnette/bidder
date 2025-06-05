@@ -61,11 +61,23 @@ const ItemsTable = ({
         try {
           const scrapedData = await scraper.scrapeItem(item.url);
           if (scrapedData) {
-            return {
-              ...item,
-              bid: scrapedData.bid,
-              currentBid: scrapedData.currentBid,
-            };
+            // Only update if bid or currentBid has changed
+            if (scrapedData.bid !== item.bid || scrapedData.currentBid !== item.currentBid) {
+              const updatedItem = {
+                ...item,
+                bid: scrapedData.bid,
+                currentBid: scrapedData.currentBid,
+                subItems: item.subItems?.map(subItem => ({
+                  ...subItem,
+                  bid: scrapedData.bid,
+                  currentBid: scrapedData.currentBid
+                }))
+              };
+              console.log('Updating item in DB:', updatedItem);
+              // Update the item in the database
+              await onEditItem(updatedItem);
+              return updatedItem;
+            }
           }
         } catch (error) {
           console.error('Failed to update bid amounts for item:', item.id, error);
@@ -73,7 +85,10 @@ const ItemsTable = ({
         return item;
       })
     );
-    setLocalItems(updatedItems);
+    // Only update if we have items
+    if (updatedItems.length > 0) {
+      setLocalItems(updatedItems);
+    }
   };
 
   useEffect(() => {
@@ -110,6 +125,18 @@ const ItemsTable = ({
   const handleDelete = (item: Item) => {
     setSelectedItem(item);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (selectedItem) {
+      try {
+        await onDeleteItem(selectedItem);
+        setIsDeleteModalOpen(false);
+        setSelectedItem(null);
+      } catch (error) {
+        console.error('Error deleting item:', error);
+      }
+    }
   };
 
   const getTimeRemaining = (date: string) => {
@@ -210,8 +237,18 @@ const ItemsTable = ({
           <Icon as={FiExternalLink} ml={1} boxSize={3} />
         </Link>
       </Td>
-      <Td fontSize="1rem">${item.bid.toFixed(2)}</Td>
-      <Td fontSize="1rem">${item.currentBid?.toFixed(2) || '0.00'}</Td>
+      <Td>
+        <Text fontSize="1rem">${(item.bid * exchangeRate).toFixed(2)} USD</Text>
+        <Text fontSize="0.875rem" color="gray.500">
+          ${item.bid.toFixed(2)} CAD
+        </Text>
+      </Td>
+      <Td>
+        <Text fontSize="1rem">${(item.currentBid! * exchangeRate).toFixed(2)} USD</Text>
+        <Text fontSize="0.875rem" color="gray.500">
+          ${item.currentBid!.toFixed(2)} CAD
+        </Text>
+      </Td>
       <Td>
         <Text fontSize="1rem">${(item.market * exchangeRate).toFixed(2)} USD</Text>
         <Text fontSize="0.875rem" color="gray.500">
@@ -314,7 +351,7 @@ const ItemsTable = ({
               setIsDeleteModalOpen(false);
               setSelectedItem(null);
             }}
-            onDelete={() => onDeleteItem(selectedItem)}
+            onDelete={handleDeleteConfirm}
             itemName={selectedItem.name}
           />
         </>

@@ -28,6 +28,7 @@ interface EditItemModalProps {
 
 const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) => {
   const [formData, setFormData] = useState<Item | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<string>('');
 
   useEffect(() => {
@@ -41,24 +42,31 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
     }
   }, [item]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData) {
-      await onEdit(formData);
-      setFormData(null);
-      onClose();
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => {
       if (!prev) return null;
-      return {
+      const updatedItem = {
         ...prev,
-        [name]: name === 'bid' || name === 'market' || name === 'currentBid' ? parseFloat(value) : value,
+        [name]: name === 'bid' || name === 'currentBid' || name === 'market' 
+          ? parseFloat(value) || 0 
+          : value
       };
+      return updatedItem;
     });
+  };
+
+  const handleSubmit = async () => {
+    if (!formData) return;
+    setIsLoading(true);
+    try {
+      await onEdit(formData);
+      onClose();
+    } catch (error) {
+      console.error('Error updating item:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSellerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -90,130 +98,116 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
   if (!formData) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
-      <ModalContent width="660px" maxW="660px" sx={{
-        width: '660px !important',
-        maxWidth: '660px !important'
-      }}>
-        <form onSubmit={handleSubmit}>
-          <ModalHeader>Edit Item</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Grid templateColumns="300px 300px" gap={4} justifyContent="center">
+      <ModalContent>
+        <ModalHeader>Edit Item</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <FormControl isRequired>
+              <FormLabel>URL</FormLabel>
+              <Input
+                name="url"
+                value={formData.url}
+                onChange={handleInputChange}
+                placeholder="Enter item URL"
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Name</FormLabel>
+              <Input
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                placeholder="Enter item name"
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Image URL</FormLabel>
+              <Input
+                name="imageUrl"
+                value={formData.imageUrl}
+                onChange={handleInputChange}
+                placeholder="Enter image URL"
+              />
+            </FormControl>
+
+            <FormControl isRequired>
+              <FormLabel>Seller URL</FormLabel>
+              <Input
+                name="sellerUrl"
+                value={formData.sellerUrl}
+                onChange={handleInputChange}
+                placeholder="Enter seller URL"
+              />
+            </FormControl>
+
+            <Grid templateColumns="repeat(3, 1fr)" gap={4} width="100%">
               <GridItem>
-                <VStack spacing={4}>
-                  <FormControl isRequired>
-                    <FormLabel>Name</FormLabel>
-                    <Input
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl isRequired>
-                    <FormLabel>URL</FormLabel>
-                    <Input
-                      name="url"
-                      value={formData.url}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Image URL</FormLabel>
-                    <Input
-                      name="imageUrl"
-                      value={formData.imageUrl}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Seller</FormLabel>
-                    <Select
-                      value={selectedSeller}
-                      onChange={handleSellerChange}
-                      placeholder="Select a seller"
-                    >
-                      {knownSellers.map((seller) => (
-                        <option key={seller.id} value={seller.id}>
-                          {seller.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Seller URL</FormLabel>
-                    <Input
-                      name="sellerUrl"
-                      value={formData.sellerUrl}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-                </VStack>
+                <FormControl isRequired>
+                  <FormLabel>Bid</FormLabel>
+                  <Input
+                    name="bid"
+                    type="number"
+                    value={formData.bid}
+                    onChange={handleInputChange}
+                    placeholder="Enter bid amount"
+                  />
+                </FormControl>
               </GridItem>
-
               <GridItem>
-                <VStack spacing={4}>
-                  <FormControl isRequired>
-                    <FormLabel>Bid Amount</FormLabel>
-                    <Input
-                      name="bid"
-                      type="number"
-                      step="0.01"
-                      value={formData.bid}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Current Bid</FormLabel>
-                    <Input
-                      name="currentBid"
-                      type="number"
-                      step="0.01"
-                      value={formData.currentBid || ''}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel>Market Value</FormLabel>
-                    <Input
-                      name="market"
-                      type="number"
-                      step="0.01"
-                      value={formData.market}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-
-                  <FormControl isRequired>
-                    <FormLabel>End Date</FormLabel>
-                    <Input
-                      name="date"
-                      type="datetime-local"
-                      value={formData.date}
-                      onChange={handleInputChange}
-                    />
-                  </FormControl>
-                </VStack>
+                <FormControl isRequired>
+                  <FormLabel>Current Bid</FormLabel>
+                  <Input
+                    name="currentBid"
+                    type="number"
+                    value={formData.currentBid}
+                    onChange={handleInputChange}
+                    placeholder="Enter current bid"
+                  />
+                </FormControl>
+              </GridItem>
+              <GridItem>
+                <FormControl isRequired>
+                  <FormLabel>Market Value (CAD)</FormLabel>
+                  <Input
+                    name="market"
+                    type="number"
+                    value={formData.market}
+                    onChange={handleInputChange}
+                    placeholder="Enter market value"
+                  />
+                </FormControl>
               </GridItem>
             </Grid>
-          </ModalBody>
 
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" type="submit">
-              Save Changes
-            </Button>
-          </ModalFooter>
-        </form>
+            <FormControl isRequired>
+              <FormLabel>End Date</FormLabel>
+              <Input
+                name="date"
+                type="datetime-local"
+                value={formData.date}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+          </VStack>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            colorScheme="blue"
+            onClick={handleSubmit}
+            isLoading={isLoading}
+          >
+            Save Changes
+          </Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   );

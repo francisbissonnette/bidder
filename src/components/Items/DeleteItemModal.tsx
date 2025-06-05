@@ -14,7 +14,7 @@ import {
   AlertDialogBody,
   AlertDialogFooter,
 } from '@chakra-ui/react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 interface DeleteItemModalProps {
   isOpen: boolean;
@@ -25,10 +25,19 @@ interface DeleteItemModalProps {
 
 const DeleteItemModal = ({ isOpen, onClose, onDelete, itemName }: DeleteItemModalProps) => {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    await onDelete();
-    onClose();
+    if (isDeleting) return;
+    try {
+      setIsDeleting(true);
+      await onDelete();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    } finally {
+      setIsDeleting(false);
+      onClose();
+    }
   };
 
   return (
@@ -44,10 +53,15 @@ const DeleteItemModal = ({ isOpen, onClose, onDelete, itemName }: DeleteItemModa
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose}>
+            <Button ref={cancelRef} onClick={onClose} isDisabled={isDeleting}>
               Cancel
             </Button>
-            <Button colorScheme="red" onClick={handleDelete} ml={3}>
+            <Button 
+              colorScheme="red" 
+              onClick={handleDelete} 
+              ml={3}
+              isLoading={isDeleting}
+            >
               Delete
             </Button>
           </AlertDialogFooter>

@@ -56,7 +56,7 @@ class ScraperService {
         console.log('✅ [Scraper] Validation result:', isValid);
         return isValid;
       },
-      extractData: async (url: string, data: any) => {
+      extractData: async (url: string, data: any): Promise<Omit<Item, 'id'>> => {
         console.log('🔍 [Scraper] Extracting Card Hobby data:', data);
         console.log('🔍 [Scraper] Full API response structure:', JSON.stringify(data, null, 2));
         console.log('🔍 [Scraper] Data object keys:', Object.keys(data.data || {}));
@@ -64,6 +64,7 @@ class ScraperService {
         const imageUrl = data.data?.TitImg || '';
         const currentBid = parseFloat(data.data?.USD_Price) || 0;
         const bid = parseFloat(data.data?.USD_HighestPrice) || 0;
+        const market = parseFloat(data.data?.USD_MarketPrice) || 0;
         const rawTitle = data.data?.Title || 'Unknown Item';
         console.log('📝 [Scraper] Raw title:', rawTitle);
         
@@ -101,8 +102,9 @@ class ScraperService {
           sellerUrl,
           bid,
           currentBid,
-          market: 0,
+          market,
           date: formattedDate,
+          seller: data.data?.SellerName || ''
         };
         console.log('✅ [Scraper] Extracted data:', result);
         return result;

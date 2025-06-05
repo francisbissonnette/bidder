@@ -238,16 +238,10 @@ const ItemsTable = ({
         </Link>
       </Td>
       <Td>
-        <Text fontSize="1rem">${(item.bid * exchangeRate).toFixed(2)} USD</Text>
-        <Text fontSize="0.875rem" color="gray.500">
-          ${item.bid.toFixed(2)} CAD
-        </Text>
+        <Text fontSize="1rem">${item.bid.toFixed(2)} USD</Text>
       </Td>
       <Td>
-        <Text fontSize="1rem">${(item.currentBid! * exchangeRate).toFixed(2)} USD</Text>
-        <Text fontSize="0.875rem" color="gray.500">
-          ${item.currentBid!.toFixed(2)} CAD
-        </Text>
+        <Text fontSize="1rem">${item.currentBid!.toFixed(2)} USD</Text>
       </Td>
       <Td>
         <Text fontSize="1rem">${(item.market * exchangeRate).toFixed(2)} USD</Text>

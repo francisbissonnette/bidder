@@ -234,7 +234,12 @@ const ItemsTable = ({
         </Link>
       </Td>
       <Td>
-        <Text fontSize="1rem">${item.bid.toFixed(2)} USD</Text>
+        <Text 
+          fontSize="1rem" 
+          color={item.bid < (item.currentBid || 0) ? 'red.500' : 'inherit'}
+        >
+          ${item.bid.toFixed(2)} USD
+        </Text>
       </Td>
       <Td>
         <Text fontSize="1rem">${item.currentBid!.toFixed(2)} USD</Text>

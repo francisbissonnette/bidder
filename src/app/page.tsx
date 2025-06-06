@@ -1,6 +1,6 @@
 'use client';
 
-import { ChakraProvider, Box, Button, Container, Heading, HStack, VStack } from '@chakra-ui/react';
+import { ChakraProvider, Box, Button, Container, Heading, HStack, VStack, Select } from '@chakra-ui/react';
 import Layout from '@/components/Layout/Layout';
 import ItemsTable from '@/components/Items/ItemsTable';
 import { useState, useMemo, useEffect } from 'react';
@@ -19,6 +19,21 @@ export default function Home() {
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedSeller, setSelectedSeller] = useState<string>('');
+
+  // Known sellers mapping
+  const knownSellers = [
+    { url: 'https://www.ebay.com/usr/auction_house_usa', name: 'Auction House USA' },
+    { url: 'https://www.ebay.com/usr/auction_house_canada', name: 'Auction House Canada' },
+    { url: 'https://www.ebay.com/usr/auction_house_uk', name: 'Auction House UK' },
+    { url: 'https://www.ebay.com/usr/auction_house_australia', name: 'Auction House Australia' },
+    { url: 'https://www.ebay.com/usr/auction_house_germany', name: 'Auction House Germany' },
+    { url: 'https://www.ebay.com/usr/auction_house_france', name: 'Auction House France' },
+    { url: 'https://www.ebay.com/usr/auction_house_italy', name: 'Auction House Italy' },
+    { url: 'https://www.ebay.com/usr/auction_house_spain', name: 'Auction House Spain' },
+    { url: 'https://www.ebay.com/usr/auction_house_japan', name: 'Auction House Japan' },
+    { url: 'https://www.ebay.com/usr/auction_house_china', name: 'Auction House China' }
+  ];
 
   useEffect(() => {
     const loadItems = async () => {
@@ -104,6 +119,44 @@ export default function Home() {
     });
   }, [items]);
 
+  // Get unique sellers from items
+  const uniqueSellers = useMemo(() => {
+    console.log('Current organized items:', organizedItems);
+    const sellers = new Set<string>();
+    organizedItems.forEach(item => {
+      const sellerName = item.sellerUrl.split('/').pop() || '';
+      if (sellerName) {
+        sellers.add(sellerName);
+      }
+    });
+    const sellerList = Array.from(sellers).sort();
+    console.log('Unique sellers found:', sellerList);
+    return sellerList;
+  }, [organizedItems]);
+
+  // Helper function to get seller name from URL
+  const getSellerName = (url: string) => {
+    const knownSeller = knownSellers.find((seller: { url: string; name: string }) => seller.url === url);
+    if (knownSeller) {
+      return knownSeller.name;
+    }
+    const parts = url.split('/');
+    return parts[parts.length - 1];
+  };
+
+  // Filter items based on selected seller
+  const filteredItems = useMemo(() => {
+    if (!selectedSeller) return organizedItems;
+    return organizedItems.filter(item => {
+      const itemSeller = item.sellerUrl.split('/').pop() || '';
+      return itemSeller === selectedSeller;
+    });
+  }, [organizedItems, selectedSeller]);
+
+  const handleSellerFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSeller(e.target.value);
+  };
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -112,21 +165,36 @@ export default function Home() {
     <ChakraProvider theme={theme}>
       <Layout>
         <Container maxW="container.2xl" py={8}>
-          <HStack justify="space-between" mb={8}>
-            <Heading size="lg">Items</Heading>
-            <Button colorScheme="gray" onClick={() => setIsAddModalOpen(true)}>
-              Add Item
-            </Button>
-          </HStack>
+          <VStack spacing={4} align="stretch">
+            <HStack justify="space-between">
+              <Heading size="lg">Items</Heading>
+              <Button colorScheme="gray" onClick={() => setIsAddModalOpen(true)}>
+                Add Item
+              </Button>
+            </HStack>
 
-          <ItemsTable
-            items={organizedItems}
-            onEditItem={handleEditItem}
-            onDeleteItem={handleDeleteItem}
-            onArchiveItem={handleArchiveItem}
-            onAddItem={() => setIsAddModalOpen(true)}
-            isArchive={false}
-          />
+            <Select
+              placeholder="Filter by seller"
+              value={selectedSeller}
+              onChange={handleSellerFilterChange}
+              maxW="300px"
+            >
+              {uniqueSellers.map(seller => (
+                <option key={seller} value={seller}>
+                  {seller}
+                </option>
+              ))}
+            </Select>
+
+            <ItemsTable
+              items={filteredItems}
+              onEditItem={handleEditItem}
+              onDeleteItem={handleDeleteItem}
+              onArchiveItem={handleArchiveItem}
+              onAddItem={() => setIsAddModalOpen(true)}
+              isArchive={false}
+            />
+          </VStack>
         </Container>
 
         <AddItemModal

@@ -71,10 +71,10 @@ class ScraperService {
         const name = removeChineseCharacters(rawTitle);
         console.log('📝 [Scraper] Cleaned title:', name);
         
-        const sellerUrl = data.data?.SellRealName ? `https://www.cardhobby.com/#/shop/${data.data.SellRealName}` : window.location.origin;
+        const sellerUrl = data.data?.SellerWyAccId ? `https://www.cardhobby.com/#/seller/detail/${data.data.SellerWyAccId}` : window.location.origin;
 
         // Get the date from EffectiveTime
-        let formattedDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+        let formattedDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
         if (data.data?.EffectiveTime) {
           console.log('📅 [Scraper] Raw EffectiveTime:', data.data.EffectiveTime);
           // Parse the date string (format: "2025/6/5 20:23:30")
@@ -82,15 +82,26 @@ class ScraperService {
           const [year, month, day] = datePart.split('/');
           const [hours, minutes] = timePart.split(':');
           
-          // Subtract 12 hours
-          let adjustedHours = parseInt(hours) - 12;
-          if (adjustedHours < 0) {
-            adjustedHours += 24;
-          }
+          console.log('📅 [Scraper] Parsed date parts:', { year, month, day, hours, minutes });
           
-          // Format as YYYY-MM-DDThh:mm
-          formattedDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${String(adjustedHours).padStart(2, '0')}:${minutes}`;
-          console.log('📅 [Scraper] Formatted date (12h subtracted):', formattedDate);
+          // Create a date object with the local time
+          const localDate = new Date(
+            parseInt(year),
+            parseInt(month) - 1, // JavaScript months are 0-based
+            parseInt(day),
+            parseInt(hours),
+            parseInt(minutes)
+          );
+          
+          // Add 4 hours to the date
+          localDate.setHours(localDate.getHours() + 4);
+          
+          console.log('📅 [Scraper] Created local date with +4 hours:', localDate);
+          
+          // Convert to EDT
+          const edtDate = new Date(localDate.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+          formattedDate = edtDate.toISOString();
+          console.log('📅 [Scraper] Final formatted date in EDT:', formattedDate);
         } else {
           console.log('⚠️ [Scraper] No EffectiveTime found in response');
         }
@@ -104,7 +115,8 @@ class ScraperService {
           currentBid,
           market,
           date: formattedDate,
-          seller: data.data?.SellerName || ''
+          seller: data.data?.SellerName || '',
+          auctions: data.data?.AuctionCount || 0
         };
         console.log('✅ [Scraper] Extracted data:', result);
         return result;

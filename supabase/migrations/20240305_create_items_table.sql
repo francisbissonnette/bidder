@@ -10,6 +10,7 @@ create table items (
   market numeric not null,
   date timestamp with time zone not null,
   seller text not null,
+  auctions integer default 0,
   archived boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

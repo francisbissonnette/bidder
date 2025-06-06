@@ -39,6 +39,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
     currentBid: 0,
     market: 0,
     date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0] + 'T08:00',
+    auctions: 0
   };
 
   const [isLoading, setIsLoading] = useState(false);
@@ -241,15 +242,32 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
               </GridItem>
             </Grid>
 
-            <FormControl isRequired>
-              <FormLabel>End Date</FormLabel>
-              <Input
-                name="date"
-                type="datetime-local"
-                value={formData.date}
-                onChange={handleInputChange}
-              />
-            </FormControl>
+            <Grid templateColumns="repeat(2, 1fr)" gap={4} width="100%">
+              <GridItem>
+                <FormControl isRequired>
+                  <FormLabel>End Date</FormLabel>
+                  <Input
+                    name="date"
+                    type="datetime-local"
+                    value={formData.date}
+                    onChange={handleInputChange}
+                  />
+                </FormControl>
+              </GridItem>
+              <GridItem>
+                <FormControl>
+                  <FormLabel>Auctions</FormLabel>
+                  <Input
+                    name="auctions"
+                    type="number"
+                    value={formData.auctions}
+                    onChange={handleInputChange}
+                    placeholder="Number of auctions"
+                    isReadOnly
+                  />
+                </FormControl>
+              </GridItem>
+            </Grid>
           </VStack>
         </ModalBody>
 

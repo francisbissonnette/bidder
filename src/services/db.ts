@@ -52,7 +52,8 @@ class DatabaseService {
       market: item.market,
       date: item.date,
       seller: item.seller,
-      archived: item.archived
+      archived: item.archived,
+      auctions: item.auctions || 0
     })) || [];
     return this.items;
   }
@@ -71,10 +72,10 @@ class DatabaseService {
     return data || [];
   }
 
-  async addItem(item: Omit<Item, 'id'>): Promise<number> {
-    const { data, error } = await supabase
+  async addItem(item: Omit<Item, 'id'>): Promise<void> {
+    const { error } = await supabase
       .from('items')
-      .insert([{
+      .insert({
         name: item.name,
         url: item.url,
         image_url: item.imageUrl,
@@ -84,39 +85,18 @@ class DatabaseService {
         market: item.market,
         date: item.date,
         seller: item.seller,
-        archived: false
-      }])
-      .select()
-      .single();
+        auctions: item.auctions || 0
+      });
 
     if (error) {
       console.error('Error adding item:', error);
       throw error;
     }
-
-    if (!data) {
-      throw new Error('No data returned from insert');
-    }
-
-    const newItem = {
-      id: data.id,
-      name: data.name,
-      url: data.url,
-      imageUrl: data.image_url,
-      sellerUrl: data.seller_url,
-      bid: data.bid,
-      currentBid: data.current_bid,
-      market: data.market,
-      date: data.date,
-      seller: data.seller,
-      archived: data.archived
-    };
-
-    this.items = [...this.items, newItem];
-    return data.id;
   }
 
   async updateItem(item: Item): Promise<void> {
+    if (!item.id) throw new Error('Item ID is required for update');
+
     const { error } = await supabase
       .from('items')
       .update({
@@ -129,7 +109,7 @@ class DatabaseService {
         market: item.market,
         date: item.date,
         seller: item.seller,
-        archived: item.archived
+        auctions: item.auctions || 0
       })
       .eq('id', item.id);
 

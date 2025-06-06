@@ -19,7 +19,7 @@ import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink, FiRefresh
 import { Item } from '@/types/item';
 import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { exchangeRateService } from '@/services/exchangeRate';
 import { knownSellers } from '@/types/seller';
 import React from 'react';
@@ -221,6 +221,22 @@ const ItemsTable = ({
         </Flex>
       </Td>
       <Td>
+        <Text fontSize="1rem" color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
+          {(() => {
+            const date = new Date(item.date);
+            date.setHours(date.getHours() + 4);
+            return date.toLocaleString();
+          })()}
+        </Text>
+        <Text fontSize="0.875rem" color={getTimeRemainingColor(item.date)}>
+          {(() => {
+            const date = new Date(item.date);
+            date.setHours(date.getHours() + 4);
+            return getTimeRemaining(date.toISOString());
+          })()}
+        </Text>
+      </Td>
+      <Td>
         <Link
           href={item.sellerUrl}
           target="_blank"
@@ -234,28 +250,27 @@ const ItemsTable = ({
         </Link>
       </Td>
       <Td>
+        <Text fontSize="1rem">{item.auctions || 0}</Text>
+      </Td>
+      <Td>
         <Text 
           fontSize="1rem" 
-          color={item.bid < (item.currentBid || 0) ? 'red.500' : 'inherit'}
+          fontWeight="medium"
+          color={item.bid && item.currentBid && item.bid > item.currentBid ? 'green.500' : 'inherit'}
         >
-          ${item.bid.toFixed(2)} USD
+          {item.bid && item.bid > 0 ? `$${item.bid.toFixed(2)}` : ''}
+          {item.bid && item.bid > 0 && item.currentBid && item.bid > item.currentBid && new Date(item.date) < new Date() && ' 🎉'}
         </Text>
       </Td>
       <Td>
-        <Text fontSize="1rem">${item.currentBid!.toFixed(2)} USD</Text>
+        <Text fontSize="1rem" fontWeight="medium">
+          {item.currentBid ? `$${item.currentBid.toFixed(2)}` : '-'}
+        </Text>
       </Td>
       <Td>
         <Text fontSize="1rem">${(item.market * exchangeRate).toFixed(2)} USD</Text>
         <Text fontSize="0.875rem" color="gray.500">
           ${item.market.toFixed(2)} CAD
-        </Text>
-      </Td>
-      <Td>
-        <Text fontSize="1rem" color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
-          {new Date(item.date).toLocaleString()}
-        </Text>
-        <Text fontSize="0.875rem" color={getTimeRemainingColor(item.date)}>
-          {getTimeRemaining(item.date)}
         </Text>
       </Td>
       <Td>
@@ -308,11 +323,12 @@ const ItemsTable = ({
         <Thead>
           <Tr>
             <Th fontSize="1rem">Item</Th>
+            <Th fontSize="1rem">End time</Th>
             <Th fontSize="1rem">Seller</Th>
-            <Th fontSize="1rem">Bid</Th>
+            <Th fontSize="1rem">Bids</Th>
+            <Th fontSize="1rem">My bid</Th>
             <Th fontSize="1rem">Current</Th>
             <Th fontSize="1rem">Market</Th>
-            <Th fontSize="1rem">Date</Th>
             <Th fontSize="1rem">Actions</Th>
           </Tr>
         </Thead>
@@ -322,7 +338,7 @@ const ItemsTable = ({
               {renderItem(item)}
               {item.subItems?.map((subItem) => renderItem(subItem, true, item.date))}
               <Tr>
-                <Td colSpan={7} h="20px" p={0}></Td>
+                <Td colSpan={8} h="20px" p={0}></Td>
               </Tr>
             </React.Fragment>
           ))}

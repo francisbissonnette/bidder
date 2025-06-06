@@ -11,4 +11,5 @@ export interface Item {
   date: string;
   archived?: boolean;
   subItems?: Item[]; // Optional array of sub-items with the same structure
+  auctions?: number; // Number of auctions from the seller
 } 

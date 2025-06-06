@@ -49,6 +49,12 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
 
   const toast = useToast();
 
+  const formatDateForInput = (dateString: string) => {
+    const date = new Date(dateString);
+    date.setHours(date.getHours() + 4); // Add 4 hours for EDT
+    return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+  };
+
   const resetForm = () => {
     setFormData(initialFormData);
     setSelectedSeller('');
@@ -77,7 +83,8 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
         setFormData(prev => {
           const newData = {
             ...prev,
-            ...scrapedData
+            ...scrapedData,
+            date: formatDateForInput(scrapedData.date)
           };
           console.log('📝 [Modal] Updated form data:', newData);
           return newData;

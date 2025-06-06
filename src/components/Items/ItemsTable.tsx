@@ -258,8 +258,7 @@ const ItemsTable = ({
           fontWeight="medium"
           color={item.bid && item.currentBid && item.bid > item.currentBid ? 'green.500' : 'inherit'}
         >
-          {item.bid && item.bid > 0 ? `$${item.bid.toFixed(2)}` : ''}
-          {item.bid && item.bid > 0 && item.currentBid && item.bid > item.currentBid && new Date(item.date) < new Date() && ' 🎉'}
+          {item.bid ? `$${item.bid.toFixed(2)}` : '-'}
         </Text>
       </Td>
       <Td>

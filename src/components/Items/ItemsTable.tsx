@@ -14,8 +14,14 @@ import {
   useColorModeValue,
   Link,
   VStack,
+  Button,
+  useDisclosure,
+  useToast,
+  HStack,
+  Tooltip,
 } from '@chakra-ui/react';
 import { FiEdit2, FiTrash2, FiChevronRight, FiArchive, FiExternalLink, FiRefreshCw } from 'react-icons/fi';
+import { RepeatIcon } from '@chakra-ui/icons';
 import { Item } from '@/types/item';
 import EditItemModal from './EditItemModal';
 import DeleteItemModal from './DeleteItemModal';
@@ -34,6 +40,7 @@ interface ItemsTableProps {
   onArchiveItem?: (id: number) => void;
   onRestoreItem?: (id: number) => void;
   isArchive?: boolean;
+  onUpdate: (items: Item[]) => void;
 }
 
 const ItemsTable = ({
@@ -44,10 +51,13 @@ const ItemsTable = ({
   onArchiveItem,
   onRestoreItem,
   isArchive = false,
+  onUpdate,
 }: ItemsTableProps) => {
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const toast = useToast();
   const [exchangeRate, setExchangeRate] = useState<number>(0.74);
   const [localItems, setLocalItems] = useState<Item[]>(items);
   const [, forceUpdate] = useState({});
@@ -115,23 +125,86 @@ const ItemsTable = ({
 
   const handleEdit = (item: Item) => {
     setSelectedItem(item);
-    setIsEditModalOpen(true);
+    onEditOpen();
   };
 
   const handleDelete = (item: Item) => {
     setSelectedItem(item);
-    setIsDeleteModalOpen(true);
+    onDeleteOpen();
+  };
+
+  const handleEditClose = () => {
+    onEditClose();
+    setSelectedItem(null);
+  };
+
+  const handleDeleteClose = () => {
+    onDeleteClose();
+    setSelectedItem(null);
   };
 
   const handleDeleteConfirm = async () => {
-    if (selectedItem) {
-      try {
-        await onDeleteItem(selectedItem);
-        setIsDeleteModalOpen(false);
-        setSelectedItem(null);
-      } catch (error) {
-        console.error('Error deleting item:', error);
-      }
+    if (!selectedItem) return;
+    
+    try {
+      await onDeleteItem(selectedItem);
+      handleDeleteClose();
+    } catch (error) {
+      console.error('Error deleting item:', error);
+    }
+  };
+
+  const handleRefresh = async () => {
+    if (!items.length) return;
+    
+    console.log('🔄 [Table] Starting refresh process for all items');
+    setIsRefreshing(true);
+    
+    try {
+      const updatedItems = await Promise.all(
+        items.map(async (item) => {
+          if (!item.url) return item;
+          
+          try {
+            console.log('📡 [Table] Fetching data for:', item.url);
+            const scrapedData = await scraper.scrapeItem(item.url);
+            console.log('✅ [Table] Received data for:', item.url, scrapedData);
+            
+            return {
+              ...item,
+              ...scrapedData,
+              market: item.market,
+              date: new Date(new Date(scrapedData.date).getTime() - 24 * 60 * 60 * 1000).toISOString()
+            };
+          } catch (error) {
+            console.error('❌ [Table] Error fetching data for:', item.url, error);
+            return item;
+          }
+        })
+      );
+      
+      console.log('📝 [Table] Updating all items with new data');
+      onUpdate(updatedItems);
+      
+      toast({
+        title: 'Success',
+        description: 'All items refreshed successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('❌ [Table] Error refreshing items:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh items',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsRefreshing(false);
+      console.log('✅ [Table] Refresh process completed');
     }
   };
 
@@ -267,7 +340,7 @@ const ItemsTable = ({
         </Text>
       </Td>
       <Td>
-        <Text fontSize="1rem">${(item.market * exchangeRate).toFixed(2)} USD</Text>
+        <Text fontSize="1rem">${Math.round(item.market * exchangeRate)} USD</Text>
         <Text fontSize="0.875rem" color="gray.500">
           ${item.market.toFixed(2)} CAD
         </Text>
@@ -318,6 +391,17 @@ const ItemsTable = ({
 
   return (
     <Box overflowX="auto">
+      <HStack justify="flex-end" mb={4}>
+        <Tooltip label="Refresh all items">
+          <IconButton
+            aria-label="Refresh all items"
+            icon={<RepeatIcon />}
+            onClick={handleRefresh}
+            isLoading={isRefreshing}
+            colorScheme="blue"
+          />
+        </Tooltip>
+      </HStack>
       <Table variant="simple">
         <Thead>
           <Tr>
@@ -325,9 +409,9 @@ const ItemsTable = ({
             <Th fontSize="1rem">End time</Th>
             <Th fontSize="1rem">Seller</Th>
             <Th fontSize="1rem">Bids</Th>
-            <Th fontSize="1rem">My bid</Th>
-            <Th fontSize="1rem">Current</Th>
-            <Th fontSize="1rem">Market</Th>
+            <Th fontSize="1rem">My bid USD</Th>
+            <Th fontSize="1rem">Current USD</Th>
+            <Th fontSize="1rem">Market USD</Th>
             <Th fontSize="1rem">Actions</Th>
           </Tr>
         </Thead>
@@ -344,23 +428,17 @@ const ItemsTable = ({
         </Tbody>
       </Table>
 
-      {!isArchive && selectedItem && (
+      {selectedItem && (
         <>
           <EditItemModal
-            isOpen={isEditModalOpen}
-            onClose={() => {
-              setIsEditModalOpen(false);
-              setSelectedItem(null);
-            }}
+            isOpen={isEditOpen}
+            onClose={handleEditClose}
             onEdit={onEditItem}
             item={selectedItem}
           />
           <DeleteItemModal
-            isOpen={isDeleteModalOpen}
-            onClose={() => {
-              setIsDeleteModalOpen(false);
-              setSelectedItem(null);
-            }}
+            isOpen={isDeleteOpen}
+            onClose={handleDeleteClose}
             onDelete={handleDeleteConfirm}
             itemName={selectedItem.name}
           />

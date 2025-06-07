@@ -106,12 +106,16 @@ export default function Home() {
 
     // For each group, find the main item (highest market) and organize others as sub-items
     return Object.values(groups).map(group => {
-      // Sort by market in descending order
-      const sortedGroup = [...group].sort((a, b) => b.market - a.market);
-      const mainItem = sortedGroup[0];
-      const subItems = sortedGroup.slice(1);
+      // Sort by market in descending order to find main item
+      const sortedByMarket = [...group].sort((a, b) => b.market - a.market);
+      const mainItem = sortedByMarket[0];
+      
+      // Get sub-items and sort them by end time
+      const subItems = sortedByMarket.slice(1).sort((a, b) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
 
-      // Create a new object for the main item with subItems
+      // Create a new object for the main item with sorted subItems
       return {
         ...mainItem,
         subItems: subItems.length > 0 ? subItems : undefined
@@ -193,6 +197,17 @@ export default function Home() {
               onArchiveItem={handleArchiveItem}
               onAddItem={() => setIsAddModalOpen(true)}
               isArchive={false}
+              onUpdate={async (updatedItems) => {
+                try {
+                  // Update each item in the database
+                  await Promise.all(updatedItems.map(item => db.updateItem(item)));
+                  // Refresh the items list
+                  const refreshedItems = await db.getAllItems();
+                  setItems(refreshedItems);
+                } catch (error) {
+                  console.error('Failed to update items:', error);
+                }
+              }}
             />
           </VStack>
         </Container>

@@ -14,10 +14,16 @@ import {
   Select,
   Grid,
   GridItem,
+  InputGroup,
+  InputRightElement,
+  IconButton,
+  useToast,
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { Item } from '@/types/item';
 import { knownSellers } from '@/types/seller';
+import { RepeatIcon } from '@chakra-ui/icons';
+import { scraper } from '@/services/scraper';
 
 interface EditItemModalProps {
   isOpen: boolean;
@@ -30,6 +36,8 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
   const [formData, setFormData] = useState<Item | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<string>('');
+  const [isFetching, setIsFetching] = useState(false);
+  const toast = useToast();
 
   const formatDateForInput = (dateString: string) => {
     const date = new Date(dateString);
@@ -105,6 +113,50 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
     }
   };
 
+  const handleRefresh = async () => {
+    if (!formData?.url) return;
+    
+    console.log('🔄 [Modal] Starting refresh process for URL:', formData.url);
+    setIsFetching(true);
+    try {
+      console.log('📡 [Modal] Calling scraper service...');
+      const scrapedData = await scraper.scrapeItem(formData.url);
+      console.log('✅ [Modal] Received scraped data:', scrapedData);
+      
+      setFormData(prev => {
+        if (!prev) return prev;
+        const newData = {
+          ...prev,
+          ...scrapedData,
+          market: prev.market, // Preserve the market value
+          date: formatDateForInput(new Date(new Date(scrapedData.date).getTime() - 24 * 60 * 60 * 1000).toISOString())
+        };
+        console.log('📝 [Modal] Updated form data:', newData);
+        return newData;
+      });
+      
+      toast({
+        title: 'Success',
+        description: 'Item details refreshed successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('❌ [Modal] Error refreshing item details:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh item details',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsFetching(false);
+      console.log('✅ [Modal] Refresh process completed');
+    }
+  };
+
   if (!formData) return null;
 
   return (
@@ -115,14 +167,28 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4}>
-            <FormControl isRequired>
+            <FormControl>
               <FormLabel>URL</FormLabel>
-              <Input
-                name="url"
-                value={formData.url}
-                onChange={handleInputChange}
-                placeholder="Enter item URL"
-              />
+              <InputGroup>
+                <Input
+                  name="url"
+                  value={formData.url}
+                  onChange={handleInputChange}
+                  placeholder="Enter Card Hobby URL"
+                  isDisabled={isFetching}
+                />
+                <InputRightElement>
+                  <IconButton
+                    aria-label="Refresh item details"
+                    icon={<RepeatIcon />}
+                    onClick={handleRefresh}
+                    isLoading={isFetching}
+                    size="sm"
+                    mr={2}
+                    isDisabled={!formData.url}
+                  />
+                </InputRightElement>
+              </InputGroup>
             </FormControl>
 
             <FormControl isRequired>

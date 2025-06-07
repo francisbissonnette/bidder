@@ -256,7 +256,7 @@ const ItemsTable = ({
         <Text 
           fontSize="1rem" 
           fontWeight="medium"
-          color={item.bid && item.currentBid && item.bid > item.currentBid ? 'green.500' : 'inherit'}
+          color={item.bid && item.currentBid ? (item.bid < item.currentBid ? 'red.500' : 'green.500') : 'inherit'}
         >
           {item.bid ? `$${item.bid.toFixed(2)}` : '-'}
         </Text>

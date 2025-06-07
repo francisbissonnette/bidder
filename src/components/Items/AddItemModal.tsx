@@ -51,8 +51,9 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
 
   const formatDateForInput = (dateString: string) => {
     const date = new Date(dateString);
-    date.setHours(date.getHours() + 4); // Add 4 hours for EDT
-    return date.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+    // Convert to local timezone without modifying the actual time
+    const localDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+    return localDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
   };
 
   const resetForm = () => {
@@ -84,7 +85,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
           const newData = {
             ...prev,
             ...scrapedData,
-            date: formatDateForInput(scrapedData.date)
+            date: formatDateForInput(new Date(new Date(scrapedData.date).getTime() - 24 * 60 * 60 * 1000).toISOString())
           };
           console.log('📝 [Modal] Updated form data:', newData);
           return newData;
@@ -161,6 +162,13 @@ const AddItemModal = ({ isOpen, onClose, onAdd }: AddItemModalProps) => {
       setIsLoading(false);
     }
   };
+
+  // Add useEffect to reset form when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      resetForm();
+    }
+  }, [isOpen]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">

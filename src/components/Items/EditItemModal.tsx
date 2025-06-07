@@ -31,9 +31,19 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSeller, setSelectedSeller] = useState<string>('');
 
+  const formatDateForInput = (dateString: string) => {
+    const date = new Date(dateString);
+    // Convert to local timezone without modifying the actual time
+    const localDate = new Date(date.getTime() + (date.getTimezoneOffset() * 60000));
+    return localDate.toISOString().slice(0, 16); // Format: YYYY-MM-DDTHH:mm
+  };
+
   useEffect(() => {
     if (item) {
-      setFormData(item);
+      setFormData({
+        ...item,
+        date: formatDateForInput(item.date)
+      });
       // Find the seller ID based on the sellerUrl
       const seller = knownSellers.find(s => s.url === item.sellerUrl);
       if (seller) {
@@ -185,7 +195,7 @@ const EditItemModal = ({ isOpen, onClose, onEdit, item }: EditItemModalProps) =>
             </Grid>
 
             <FormControl isRequired>
-              <FormLabel>End Date</FormLabel>
+              <FormLabel>End time</FormLabel>
               <Input
                 name="date"
                 type="datetime-local"

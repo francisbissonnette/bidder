@@ -62,6 +62,17 @@ const Layout = ({ children }: LayoutProps) => {
           </Link>
           <Link
             as={NextLink}
+            href="/ebay-research"
+            color={isActive('/ebay-research') ? 'blue.500' : useColorModeValue('gray.600', 'gray.300')}
+            _hover={{
+              textDecoration: 'none',
+              color: 'blue.500',
+            }}
+          >
+            Card Research
+          </Link>
+          <Link
+            as={NextLink}
             href="/archives"
             color={isActive('/archives') ? 'blue.500' : useColorModeValue('gray.600', 'gray.300')}
             _hover={{

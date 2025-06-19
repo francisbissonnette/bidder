@@ -13,6 +13,22 @@ interface EbayToken {
   token_type: string;
 }
 
+interface EbaySearchParams {
+  keywords: string;
+  categoryId?: string;
+  sort?: 'price' | 'newlyListed' | 'endingSoon';
+  limit?: number;
+  offset?: number;
+  filters?: {
+    condition?: string[];
+    location?: string;
+    priceRange?: {
+      min?: number;
+      max?: number;
+    };
+  };
+}
+
 class EbayService {
   private config: EbayConfig;
   private token: EbayToken | null = null;
@@ -28,22 +44,8 @@ class EbayService {
       return this.token.access_token;
     }
 
-    const baseUrl = this.config.environment === 'PRODUCTION' 
-      ? 'https://api.ebay.com'
-      : 'https://api.sandbox.ebay.com';
-
     try {
-      const response = await axios.post<EbayToken>(
-        `${baseUrl}/identity/v1/oauth2/token`,
-        'grant_type=client_credentials&scope=https://api.ebay.com/oauth/api_scope',
-        {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': `Basic ${Buffer.from(`${this.config.clientId}:${this.config.clientSecret}`).toString('base64')}`
-          }
-        }
-      );
-
+      const response = await axios.post<EbayToken>('/api/ebay/auth');
       this.token = response.data;
       this.tokenExpiry = Date.now() + ((this.token?.expires_in || 0) * 1000);
       return this.token?.access_token || '';
@@ -53,15 +55,21 @@ class EbayService {
     }
   }
 
-  async getItemSalesHistory(itemId: string): Promise<any> {
-    const baseUrl = this.config.environment === 'PRODUCTION' 
-      ? 'https://api.ebay.com'
-      : 'https://api.sandbox.ebay.com';
+  async searchItems(params: EbaySearchParams): Promise<any> {
+    try {
+      const response = await axios.post('/api/ebay/search', params);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching items:', error);
+      throw error;
+    }
+  }
 
+  async getItemSalesHistory(itemId: string): Promise<any> {
     try {
       const token = await this.getAccessToken();
       const response = await axios.get(
-        `${baseUrl}/buy/marketplace_insights/v1/item_sales/search?item_id=${itemId}`,
+        `/api/ebay/item/${itemId}/sales`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -78,14 +86,10 @@ class EbayService {
   }
 
   async getItemPriceHistory(itemId: string): Promise<any> {
-    const baseUrl = this.config.environment === 'PRODUCTION' 
-      ? 'https://api.ebay.com'
-      : 'https://api.sandbox.ebay.com';
-
     try {
       const token = await this.getAccessToken();
       const response = await axios.get(
-        `${baseUrl}/buy/marketplace_insights/v1/item_price_history/search?item_id=${itemId}`,
+        `/api/ebay/item/${itemId}/price`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,

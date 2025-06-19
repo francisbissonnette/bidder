@@ -290,11 +290,14 @@ const ItemsTable = ({
           >
             {item.name}
             <Icon as={FiExternalLink} ml={1} boxSize={3} />
+            {!isSubItem && item.subItems && item.subItems.length > 0 && (
+              <Icon as={FiChevronRight} ml={1} boxSize={4} color="gray.500" />
+            )}
           </Link>
         </Flex>
       </Td>
       <Td>
-        <Text fontSize="1rem" color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'red.500' : 'white'}>
+        <Text fontSize="1rem" color={isSubItem && mainItemDate && new Date(item.date) < new Date(mainItemDate) ? 'orange.500' : 'white'}>
           {(() => {
             const date = new Date(item.date);
             date.setHours(date.getHours() + 4);

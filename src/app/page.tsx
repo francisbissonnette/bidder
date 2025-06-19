@@ -105,7 +105,7 @@ export default function Home() {
     }, {} as Record<string, Item[]>);
 
     // For each group, find the main item (highest market) and organize others as sub-items
-    return Object.values(groups).map(group => {
+    const groupedItems = Object.values(groups).map(group => {
       // Sort by market in descending order to find main item
       const sortedByMarket = [...group].sort((a, b) => b.market - a.market);
       const mainItem = sortedByMarket[0];
@@ -121,6 +121,11 @@ export default function Home() {
         subItems: subItems.length > 0 ? subItems : undefined
       };
     });
+
+    // Sort groups by main item's end time (earliest first)
+    return groupedItems.sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [items]);
 
   // Get unique sellers from items
